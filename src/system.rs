@@ -1,5 +1,7 @@
 use crossbeam_channel::{bounded, Receiver, Sender};
 use std::collections::HashMap;
+use std::thread;
+use std::time::Duration;
 
 use crate::actor::{Actor, ActorAddress, Message};
 
@@ -33,38 +35,46 @@ pub enum ExecutorCommands {}
 
 /// responsible for creating an executor
 pub trait ExecutorFactory {
-    // fn spawn_executors(): HashMap<int, >
-    fn spawn_executor(&self) -> Sender<ExecutorCommands>;
+    // Spawn an executor with a given name. Tha name will be used by the
+    // executor for routing messages to the correct actor.
+    fn spawn_executor(&self, name: &str) -> Sender<ExecutorCommands>;
 }
 
 pub struct ThreadExecutorFactory {}
 impl ExecutorFactory for ThreadExecutorFactory {
-    fn spawn_executor(&self) -> Sender<ExecutorCommands> {
-        let (sender, _) = bounded::<ExecutorCommands>(COMMAND_BUFFER_SIZE);
-        // TODO: spawn thread with the receiver
+    fn spawn_executor(&self, name: &str) -> Sender<ExecutorCommands> {
+        let (sender, receiver) = bounded::<ExecutorCommands>(COMMAND_BUFFER_SIZE);
+        thread::spawn(move || {
+            ThreadExecutor {
+                name: name.to_string(),
+                actors: HashMap::new(),
+            }.run(receiver)
+        });
         sender
     }
 }
 
-/// thread-local executor responsible for processing messages on actors
 pub trait ExecutionContext {
-    // handler for dispatching/routing messages
-    // TODO: Should this be a channel? So the executor can loop over it's global mailbox
-    //       and route messages to sub-mailboxes?
-    //
-    // TODO: If we have a global channel, then why not just have each mailbox contain a
-    //       channel that can be routed _directly_ to? Does that break any sort of encapsulation
-    //       of the actor/actor-cell?
-    fn route_msg(self: &Self, destination: ActorAddress, message: Message);
+    fn run(&self, receiver: Receiver<ExecutorCommands>);
 }
 
+/// thread-local executor responsible for processing messages on actors
 pub struct ThreadExecutor {
+    // Name of the executor, which is part of the address to actors and used
+    // for routing decisions
+    name: String,
+
     // map of actor names to actors
     // the "name" is part of the address
     actors: HashMap<String, Box<dyn Actor>>,
 }
 impl ExecutionContext for ThreadExecutor {
-    fn route_msg(self: &Self, destination: ActorAddress, message: Message) {
-        todo!();
+    fn run(&self, receiver: Receiver<ExecutorCommands>) {
+        loop {
+            if !receiver.is_empty() {
+                // TODO: process messages
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
     }
 }
