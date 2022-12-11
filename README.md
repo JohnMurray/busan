@@ -14,9 +14,11 @@
   + There is a global store of actors and messages
     + should the message and actors be tightly or loosely coupled?
   + Instances pull work from a common queue
+  + __Question:__ Are actors sticky to an executor or are they moved around?
 
 
 ## Properties of Actors and Messages
   + All messages are protobuf and immutable
+  + Messages must always be assumed to be serialized, but not guaranteed
 
 
