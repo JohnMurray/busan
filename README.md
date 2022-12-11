@@ -39,3 +39,36 @@
   + Messages must always be assumed to be serialized, but not guaranteed
 
 
+
+## Thoughts on behaviors
+  + all messages are protobuf
+  + behaviors are grouping (maybe dynamic) of message processors
+  + There is likely an API here to pattern match over the message types (via protobuf's reflection libs)
+    to find the right processor. This could be hidden and a processor could be as simple as a lambda
+
+```rust
+let processor: Processor = processor(|msg: HelloActor| {
+    // process the HelloActor message
+});
+
+fn processor<T: Message>(f: Fn(T) -> ()) -> Processor {
+    // create a wrapper around F that checks the Message against the type T via
+    // protobuf reflection
+}
+trait Processor {
+    fn matches(&self, msg: Message) -> bool;
+    fn process(&self, msg: Message);
+}
+```
+
+  + Behaviors should easily be able to be grouped together
+
+```rust
+let group = vec![behavior1, behavior2, behavior3];
+```
+
+  + Actors define an initial behavior group as the receive function
+  + At any point in time, the actor could call the `become(behavior_group)` function to change
+    the behavior of the actor
+  + The _actual_ `receive` method would be internal/private implementation detail of the Actor
+    that uses the current behavior group to process messages
