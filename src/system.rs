@@ -24,7 +24,7 @@ impl ActorSystem {
 
         // create a pre-configured number of executors
         for i in 0..NUM_EXECUTORS {
-            system.executors.insert(format!("executor-{}", i),system.executor_factory.spawn_executor());
+            system.executors.insert(format!("executor-{}", i),system.executor_factory.spawn_executor(format!("executor-{}", i)));
         }
 
         system
@@ -37,16 +37,16 @@ pub enum ExecutorCommands {}
 pub trait ExecutorFactory {
     // Spawn an executor with a given name. Tha name will be used by the
     // executor for routing messages to the correct actor.
-    fn spawn_executor(&self, name: &str) -> Sender<ExecutorCommands>;
+    fn spawn_executor(&self, name: String) -> Sender<ExecutorCommands>;
 }
 
 pub struct ThreadExecutorFactory {}
 impl ExecutorFactory for ThreadExecutorFactory {
-    fn spawn_executor(&self, name: &str) -> Sender<ExecutorCommands> {
+    fn spawn_executor(&self, name: String) -> Sender<ExecutorCommands> {
         let (sender, receiver) = bounded::<ExecutorCommands>(COMMAND_BUFFER_SIZE);
         thread::spawn(move || {
             ThreadExecutor {
-                name: name.to_string(),
+                name,
                 actors: HashMap::new(),
             }.run(receiver)
         });

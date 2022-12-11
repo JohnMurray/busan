@@ -1,5 +1,5 @@
 [package]
-name = "buson"
+name = "busan"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,12 @@ edition = "2021"
 
 [dependencies]
 crossbeam-channel = "0.5"
+
+
+
+## --------------------------------------------------------------------------------
+## Examples
+
+[[bin]]
+name = "hello_world"
+path = "examples/hello_world/main.rs"
