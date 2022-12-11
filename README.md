@@ -72,3 +72,6 @@ let group = vec![behavior1, behavior2, behavior3];
     the behavior of the actor
   + The _actual_ `receive` method would be internal/private implementation detail of the Actor
     that uses the current behavior group to process messages
+
+__open questions__
+  + How does this set of behaviors interact with the actor's state?
