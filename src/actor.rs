@@ -13,4 +13,7 @@ pub struct ActorCell {
 
 pub type Message = String;
 
-pub struct ActorAddress;
+pub struct ActorAddress {
+    pub name: String,
+    pub executor_name: String,
+}
