@@ -1,7 +1,7 @@
 extern crate busan;
 
-use busan::system::ActorSystem;
 use busan::actor::Actor;
+use busan::system::ActorSystem;
 
 fn main() {
     let system = ActorSystem::init();

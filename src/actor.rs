@@ -1,5 +1,5 @@
 /// place-holder trait for an actor, this might change at some point
-pub trait Actor {
+pub trait Actor: Send {
     fn init() -> Self
     where
         Self: Sized;
