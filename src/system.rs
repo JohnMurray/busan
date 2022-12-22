@@ -1,9 +1,9 @@
-use crossbeam_channel::{Sender};
+use crossbeam_channel::Sender;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
-use crate::actor::{Actor};
+use crate::actor::{Actor, ActorInit};
 use crate::executor::{ExecutorCommands, ExecutorFactory};
 use crate::thread_executor::ThreadExecutorFactory;
 
@@ -38,8 +38,12 @@ impl ActorSystem {
 
     // TODO: rename to root-actor only (or update to rotate through executors)
     // TODO: If for root actor only, create lock to prevent multiple root actors
-    pub fn spawn_actor<A: Actor + 'static>(&self, name: String) {
-        assert!(
+    pub fn spawn_root_actor<B, A: ActorInit<Init = B> + Actor + 'static>(
+        &self,
+        name: String,
+        init_msg: &B,
+    ) {
+        debug_assert!(
             self.executors.len() > 0,
             "No executors available to spawn actor"
         );
@@ -47,7 +51,10 @@ impl ActorSystem {
         self.executors
             .get("executor-0")
             .unwrap()
-            .send(ExecutorCommands::SpawnActor(Box::new(A::init()), name))
+            .send(ExecutorCommands::SpawnActor(
+                Box::new(A::init(init_msg)),
+                name,
+            ))
             .unwrap()
     }
 

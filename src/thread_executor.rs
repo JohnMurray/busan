@@ -1,10 +1,11 @@
 use crossbeam_channel::{bounded, Receiver, Sender};
+use log::trace;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
 use crate::actor::{Actor, ActorAddress};
-use crate::executor::{ExecutionContext, ExecutorCommands, ExecutorFactory};
+use crate::executor::{Executor, ExecutorCommands, ExecutorFactory};
 
 const COMMAND_BUFFER_SIZE: usize = 32;
 
@@ -41,34 +42,31 @@ impl ThreadExecutor {
         }
     }
 }
-impl ExecutionContext for ThreadExecutor {
+impl Executor for ThreadExecutor {
     fn run(&mut self, receiver: Receiver<ExecutorCommands>) {
+        const SLEEP_DURATION_MS: u64 = 10;
+
         loop {
             if !receiver.is_empty() {
                 match receiver.recv().unwrap() {
                     ExecutorCommands::SpawnActor(actor, name) => {
-                        // let actor = type_id
-                        //     .downcast_ref::<dyn Actor>()
-                        //     .unwrap()
-                        //     .init();
-                        // self.actors.insert(name, actor);
                         self.actors.insert(name, actor);
-                        println!("received spawn actor command");
+                        trace!("received spawn actor command");
                     }
                     ExecutorCommands::Shutdown => {
-                        println!("received shutdown command");
+                        trace!("received shutdown command");
                         break;
                     }
                 }
                 // TODO: process messages
             }
-            println!("nothing to do, sleeping...");
-            thread::sleep(Duration::from_millis(100));
+            trace!("nothing to do, sleeping...");
+            thread::sleep(Duration::from_millis(SLEEP_DURATION_MS));
         }
     }
 
-    fn spawn_actor<A: Actor + 'static>(&mut self, name: String) -> ActorAddress {
-        self.actors.insert(name.clone(), Box::new(A::init()));
-        self.get_address(&name)
-    }
+    // fn spawn_actor<A: Actor + 'static>(&mut self, name: String) -> ActorAddress {
+    //     self.actors.insert(name.clone(), Box::new(A::init()));
+    //     self.get_address(&name)
+    // }
 }

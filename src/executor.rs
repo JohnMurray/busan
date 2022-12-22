@@ -14,7 +14,7 @@ pub trait ExecutorFactory {
     fn spawn_executor(&self, name: String) -> Sender<ExecutorCommands>;
 }
 
-pub trait ExecutionContext {
+pub trait Executor {
     fn run(&mut self, receiver: Receiver<ExecutorCommands>);
-    fn spawn_actor<A: Actor + 'static>(&mut self, name: String) -> ActorAddress;
+    // fn spawn_actor<A: Actor + 'static>(&mut self, name: String) -> ActorAddress;
 }
