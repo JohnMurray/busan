@@ -7,8 +7,12 @@ edition = "2021"
 
 [dependencies]
 crossbeam-channel = "0.5"
+log = "0.4"
 prost = "0.11"
 prost-types = "0.11"
+
+[build-dependencies]
+prost-build = "0.11"
 
 
 
