@@ -2,8 +2,14 @@
 
 \[[decision_log](https://github.com/JohnMurray/busan/tree/main/decisions)\]
 
+Busan is an actor implementation for Rust that is currently under heavy development
+and is experimental in nature.
 
-## Task Scheduler
+
+----
+## Raw Notes
+
+### Task Scheduler
   + Thoughts:
     + actors are both state + workers/units of work
     + messages sent represent units of work that must be assigned to an actor
@@ -36,13 +42,13 @@
   + __Question:__ Are actors sticky to an executor or are they moved around?
 
 
-## Properties of Actors and Messages
+### Properties of Actors and Messages
   + All messages are protobuf and immutable
   + Messages must always be assumed to be serialized, but not guaranteed
 
 
 
-## Thoughts on behaviors
+### Thoughts on behaviors
   + all messages are protobuf
   + behaviors are grouping (maybe dynamic) of message processors
   + There is likely an API here to pattern match over the message types (via protobuf's reflection libs)
