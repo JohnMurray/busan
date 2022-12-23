@@ -16,8 +16,11 @@ concurrency:
 
 jobs:
   protoc:
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v1
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
 
   check:
     name: Check
