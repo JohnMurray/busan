@@ -1,5 +1,7 @@
 # busan
 
+[![CI](https://github.com/JohnMurray/busan/actions/workflows/ci.yaml/badge.svg)](https://github.com/JohnMurray/busan/actions/workflows/ci.yaml)
+
 \[[decision_log](https://github.com/JohnMurray/busan/tree/main/decisions)\]
 
 Busan is an actor implementation for Rust that is currently under heavy development
