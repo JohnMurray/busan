@@ -1,6 +1,12 @@
 # busan
 
-[![CI](https://github.com/JohnMurray/busan/actions/workflows/ci.yaml/badge.svg)](https://github.com/JohnMurray/busan/actions/workflows/ci.yaml)
+[![Crates.io][crates-badge]][crates-url]
+[![Build Status][actions-badge]][actions-url]
+
+  [crates-badge]: https://img.shields.io/crates/v/busan.svg
+  [crates-url]: https://crates.io/crates/busan
+  [actions-badge]: https://github.com/JohnMurray/busan/actions/workflows/ci.yaml/badge.svg
+  [actions-url]: https://github.com/JohnMurray/busan/actions/workflows/ci.yaml
 
 \[[decision_log](https://github.com/JohnMurray/busan/tree/main/decisions)\]
 
