@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   protoc:
-    name: Check
+    name: Install protobuf
     runs-on: ubuntu-latest
     steps:
       - name: Install Protoc
@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [protoc]
     steps:
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
       - uses: actions/checkout@v3
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
