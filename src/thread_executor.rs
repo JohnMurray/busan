@@ -1,26 +1,26 @@
-use crossbeam_channel::{bounded, Receiver, Sender};
+use crossbeam_channel::{bounded, Receiver};
 use log::trace;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
 use crate::actor::{Actor, ActorAddress};
-use crate::executor::{Executor, ExecutorCommands, ExecutorFactory};
+use crate::executor::{Executor, ExecutorCommands, ExecutorFactory, ExecutorHandle};
 
 const COMMAND_BUFFER_SIZE: usize = 32;
 
 pub struct ThreadExecutorFactory {}
 impl ExecutorFactory for ThreadExecutorFactory {
-    fn spawn_executor(&self, name: String) -> Sender<ExecutorCommands> {
+    fn spawn_executor(&self, name: String) -> ExecutorHandle {
         let (sender, receiver) = bounded::<ExecutorCommands>(COMMAND_BUFFER_SIZE);
-        thread::spawn(move || {
+        let t = thread::spawn(move || {
             ThreadExecutor {
                 name,
                 actors: HashMap::new(),
             }
             .run(receiver)
         });
-        sender
+        ExecutorHandle::new(sender, move || t.join().unwrap())
     }
 }
 
