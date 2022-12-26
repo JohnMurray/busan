@@ -1,4 +1,4 @@
-# 000 Busan
+# Decision 000: Busan
 __2022-12-26__
 
 ## Context/Problem
@@ -30,7 +30,7 @@ __Additional Context__ \
 I'm not going to go into depth on _what_ the actor model is since there is already a
 lot of great information out there.
 
-  + [Wikipedia: ][wikipedia]
+  + [Wikipedia: Actor Model][wikipedia]
   + [Intro to ActorModel Tech-Talk using Akka][tech-talk] _(shameless plug)_
 
   [wikipedia]: https://en.wikipedia.org/wiki/Actor_model
