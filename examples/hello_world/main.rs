@@ -12,7 +12,7 @@ fn main() {
     let mut init = hello_world::actor::Init::default();
     init.greeting = "Hi there!".to_string();
     system.spawn_root_actor::<_, Greet>("greeter".to_string(), &init);
-    system.wait_shutdown();
+    system.shutdown();
 }
 
 struct Greet {

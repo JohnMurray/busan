@@ -1,10 +1,9 @@
-use crossbeam_channel::Sender;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
 use crate::actor::{Actor, ActorInit};
-use crate::executor::{ExecutorCommands, ExecutorFactory};
+use crate::executor::{ExecutorCommands, ExecutorFactory, ExecutorHandle};
 use crate::thread_executor::ThreadExecutorFactory;
 
 const NUM_EXECUTORS: usize = 4;
@@ -12,7 +11,7 @@ const NUM_EXECUTORS: usize = 4;
 /// Global value for a collection of actors that may communicate with local-only addresses.
 pub struct ActorSystem {
     executor_factory: Box<dyn ExecutorFactory>,
-    executors: HashMap<String, Sender<ExecutorCommands>>,
+    executors: HashMap<String, ExecutorHandle>,
 }
 
 impl ActorSystem {
@@ -51,6 +50,7 @@ impl ActorSystem {
         self.executors
             .get("executor-0")
             .unwrap()
+            .sender
             .send(ExecutorCommands::SpawnActor(
                 Box::new(A::init(init_msg)),
                 name,
@@ -59,13 +59,19 @@ impl ActorSystem {
     }
 
     /// Send shutdown message to all executors and wait for them to finish
-    pub fn wait_shutdown(&self) {
-        thread::sleep(Duration::from_millis(1000));
-
+    pub fn shutdown(self) {
         for (_, executor) in self.executors.iter() {
-            executor.send(ExecutorCommands::Shutdown).unwrap();
+            executor.sender.send(ExecutorCommands::Shutdown).unwrap();
         }
+        self.await_shutdown();
+    }
 
-        thread::sleep(Duration::from_millis(10_000));
+    /// Await shutdown of all executors. Similar to shutdown, but doesn't send
+    /// shutdown messages to begin shutdown. Will wait indefinitely until all
+    /// executors have shutdown.
+    pub fn await_shutdown(self) {
+        self.executors
+            .into_iter()
+            .for_each(|(_, executor)| executor.await_close());
     }
 }
