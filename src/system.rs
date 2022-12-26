@@ -59,16 +59,19 @@ impl ActorSystem {
     }
 
     /// Send shutdown message to all executors and wait for them to finish
-    pub fn wait_shutdown(self) {
-        thread::sleep(Duration::from_millis(1000));
-
+    pub fn shutdown(self) {
         for (_, executor) in self.executors.iter() {
             executor.sender.send(ExecutorCommands::Shutdown).unwrap();
         }
-        self.executors.into_iter().for_each(|(_, executor)| {
-            executor.close();
-        });
+        self.await_shutdown();
+    }
 
-        thread::sleep(Duration::from_millis(10_000));
+    /// Await shutdown of all executors. Similar to shutdown, but doesn't send
+    /// shutdown messages to begin shutdown. Will wait indefinitely until all
+    /// executors have shutdown.
+    pub fn await_shutdown(self) {
+        self.executors
+            .into_iter()
+            .for_each(|(_, executor)| executor.await_close());
     }
 }

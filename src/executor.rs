@@ -39,7 +39,7 @@ impl ExecutorHandle {
     }
 
     /// Close the executor handle. Note that this can only be called once and consumes itself.
-    pub fn close(self) {
+    pub fn await_close(self) {
         (self.close_fn)();
     }
 }
