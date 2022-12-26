@@ -11,6 +11,9 @@ choosing to implement a thread-based executor, because the interface is generic,
 of say a non-blocking IO executor. In this case, because the alternative is still possible, it's not really
 worth a log entry for.
 
+  + [000 Busan - Why write a new framework?](https://github.com/JohnMurray/busan/blob/main/decisions/000-busan.md)
+
+
 ## Template (for my own copy/pasta)
 
 ```markdown
