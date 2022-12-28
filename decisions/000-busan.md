@@ -92,17 +92,22 @@ _a few moments later_
 
 Joking aside, I think creating the solution I'm envisioning _does require_ starting from
 a blank slate. There are some fundamental decisions that most actor implementation start
-out making that I think should be removed and there are some (possibly controversial)
-decisions that I'd like to experiment with that are not fit for an existing project of
-any real maturity.
+out making that I think should be removed and there are some (possibly controversial,
+possibly bad) decisions that I'd like to experiment with that are not fit for an
+ existing project of any real maturity.
 
 This will become more clear as this project evolves and more decision logs are written,
 but a short preview (without context) might be:
 
   + All messages are represented via Protobuf
+  + Relatedly, _every_ value sent via a message must be serialized
   + Actors are "untyped" that (in essence) they pattern match on the incoming type
-  + By default actors are not required to respond to a message
-  + _Every_ value sent via a message must be serialized
+  + Semantics closer to original Hewitt & Baker inception of actors, eg:
+    + Communication does _not_ have to be in req/resp pairs (as seems common amongst
+      many Rust implementations today)
+    + Actors can alter their state and message handling logic (behaviors) based on
+      messages received
+    + Behaviors and actors may be dynamically composed
 
 There are probably a few things I'm forgetting as I'm writing this and these sound like
 odd objectives without more context (which will come later).
@@ -113,4 +118,7 @@ this decision log. Contributing to Actix would be the quickest path completion a
 value for the community. Building my own is risky for a lot of reasons; I could burn
 out or get tired, I could build something no one wants whereas building on Actix would
 give me quicker feedback, I could take so long that some future _thing_ makes my work
-redundant.
+redundant, etc etc.
+
+Even with this approach, this does not restrict the possibility of a future merger or
+folding ideas into another framework/library.
