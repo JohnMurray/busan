@@ -12,13 +12,14 @@ of say a non-blocking IO executor. In this case, because the alternative is stil
 worth a log entry for.
 
   + [000 Busan - Why write a new framework?](https://github.com/JohnMurray/busan/blob/main/decisions/000-busan.md)
+  + [001 Protobuf Messaes](https://github.com/JohnMurray/busan/blob/main/decisions/001-protobuf.md)
 
 
 ## Template (for my own copy/pasta)
 
 ```markdown
 
-# <TITLE>
+# Decision XXX: <TITLE>
 __<DATE>__
 
 ## Context/Problem
