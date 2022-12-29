@@ -3,8 +3,8 @@ use std::thread;
 use std::time::Duration;
 
 use crate::actor::{Actor, ActorInit};
+use crate::executor::thread_executor::ThreadExecutorFactory;
 use crate::executor::{ExecutorCommands, ExecutorFactory, ExecutorHandle};
-use crate::thread_executor::ThreadExecutorFactory;
 
 const NUM_EXECUTORS: usize = 4;
 
