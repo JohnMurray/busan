@@ -4,6 +4,7 @@
 [![Build Status][actions-badge]][actions-url]
 [![GNU GPL v3 licensed][gpl-badge]][gpl-url]
 [![Decision log][decision-log-badge]][decision-log-url]
+[![Change Log][change-log-badge]][change-log-url]
 
   [crates-badge]: https://img.shields.io/crates/v/busan.svg
   [crates-url]: https://crates.io/crates/busan
@@ -13,6 +14,8 @@
   [gpl-url]: https://github.com/JohnMurray/busan/blob/main/LICENSE
   [decision-log-badge]: https://img.shields.io/badge/%F0%9F%93%83-decision%20log-blue
   [decision-log-url]: https://github.com/JohnMurray/busan/tree/main/decisions
+  [change-log-badge]: https://img.shields.io/badge/%F0%9F%93%83-change%20log-blue
+  [change-log-url]: https://github.com/JohnMurray/busan/blob/main/CHANGELOG.md
 
 Busan is an actor implementation for Rust that is currently under heavy development
 and is experimental in nature.
