@@ -17,84 +17,49 @@
   [change-log-badge]: https://img.shields.io/badge/%F0%9F%93%83-change%20log-blue
   [change-log-url]: https://github.com/JohnMurray/busan/blob/main/CHANGELOG.md
 
-Busan is an actor implementation for Rust that is currently under heavy development
-and is experimental in nature.
+Busan is an [actor][wikipedia_actor] implementation for Rust that is currently under heavy
+development and is experimental in nature. It is not yet ready for production use.
 
+  [wikipedia_actor]: https://en.wikipedia.org/wiki/Actor_model
 
-----
-## Raw Notes
+## Documentation
 
-### Task Scheduler
-  + Thoughts:
-    + actors are both state + workers/units of work
-    + messages sent represent units of work that must be assigned to an actor
-    + actors should be somewhat "sticky" to a thread
-    + I/O model
-        + forget about this for now
-    + routing
-      + addresses are composed of system + executor + actor
-      + destination lookup:
-        + Assume that all current lookups and sends are local
-        + executor names could be shared by the control thread to all executors through
-          the command protocol
-        + actor names can be kept local (to avoid a lot of data redundancy as the system
-          should handle _many_ more actors than executors)
-        + executors can be the final router to assign messages to inboxes
-      + execution flow
-        + executors run a loop
-          + check for updates on the command queue - process all messages
-          + check for messages on the routing queue - process N messages
-          + check for pending work on actors, run until:
-            + command queue has messages
-            + routing queue is at 80% capacity
-            + all work is finished
+The project lacks comprehensive documentation at this time, however I am experimenting with [decision
+logs][decision-log-url] as a way to document and communicate the major design decisions that were
+made.
 
-### Threading Model
-  + Each instance of the executor is independent and runs on their own thread
-  + There is a global store of actors and messages
-    + should the message and actors be tightly or loosely coupled?
-  + Instances pull work from a common queue
-  + __Question:__ Are actors sticky to an executor or are they moved around?
+Of course the source code is also lightly documented and available at [docs.rs][docs-rs-busan].
 
+  [docs-rs-busan]: https://docs.rs/busan/latest/busan/
 
-### Properties of Actors and Messages
-  + All messages are protobuf and immutable
-  + Messages must always be assumed to be serialized, but not guaranteed
+## Roadmap
 
+I don't have a long-term roadmap laid out for the project and I don't expect plans to be super detailed
+outside the short-term milestones. I'm currently using GitHub's Project feature to organize my work,
+which is publicly viewable [here][github_project]. Generally my plan looks like:
 
+  + `0.2.0` - Spawn actors, send and receive messages
+  + `0.3.0` - Core features - lifecycle management, actor/work scheduler, etc.
+  + `0.4.0` - Actor utilities - routers, timers, ask-pattern, behaviors, etc.
 
-### Thoughts on behaviors
-  + all messages are protobuf
-  + behaviors are grouping (maybe dynamic) of message processors
-  + There is likely an API here to pattern match over the message types (via protobuf's reflection libs)
-    to find the right processor. This could be hidden and a processor could be as simple as a lambda
+Beyond this, I don't have any defined plans. Things on my mind include:
 
-```rust
-let processor: Processor = processor(|msg: HelloActor| {
-    // process the HelloActor message
-});
+  + Remote facilities - remote routing/messaging, clustering, remote actor spawning, etc.
+  + gRPC bridging (exposing a gRPC interface to communicate with actors)
+  + Network bridging - a generic take on gRPC bridging that allows for arbitrary network protocols
+  + DSL for one-off actor systems
+  + Observability - tracing, logging, metrics, etc.
+  + State snapshotting/journaling, actor migration
+  + Async IO and/or async/await support and/or Tower integration
 
-fn processor<T: Message>(f: Fn(T) -> ()) -> Processor {
-    // create a wrapper around F that checks the Message against the type T via
-    // protobuf reflection
-}
-trait Processor {
-    fn matches(&self, msg: Message) -> bool;
-    fn process(&self, msg: Message);
-}
-```
+It's not clear how quickly progress will be made against these milestones and ideas as this is
+also a personal experiment in how I think and manage my open-source projects.
 
-  + Behaviors should easily be able to be grouped together
+  [github_project]: https://github.com/users/JohnMurray/projects/1/views/1
 
-```rust
-let group = vec![behavior1, behavior2, behavior3];
-```
+## Contributing
 
-  + Actors define an initial behavior group as the receive function
-  + At any point in time, the actor could call the `become(behavior_group)` function to change
-    the behavior of the actor
-  + The _actual_ `receive` method would be internal/private implementation detail of the Actor
-    that uses the current behavior group to process messages
-
-__open questions__
-  + How does this set of behaviors interact with the actor's state?
+I'm not currently considering code contributions at the moment as the project is still in its infancy,
+and I'm still working out the design. However, I am open to suggestions and feedback. If you have any
+ideas or suggestions, please open an issue for discussion. I'd also be interested in hearing about
+real-world use-cases that are not well-supported by other Rust-based actor implementations.
