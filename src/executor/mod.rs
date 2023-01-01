@@ -1,3 +1,5 @@
+pub(crate) mod thread_executor;
+
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::actor::Actor;
@@ -16,7 +18,6 @@ pub trait ExecutorFactory {
 
 pub trait Executor {
     fn run(&mut self, receiver: Receiver<ExecutorCommands>);
-    // fn spawn_actor<A: Actor + 'static>(&mut self, name: String) -> ActorAddress;
 }
 
 /// ExecutorHandle contains all the context necessary for the control-thread, which
