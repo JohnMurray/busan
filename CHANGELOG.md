@@ -1,5 +1,7 @@
 ## 0.1.2
 
+  + Added support for spawning actors
+
 ## 0.1.1
 
   + Added a CHANGELOG.md file :-)
