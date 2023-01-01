@@ -10,6 +10,8 @@ repository = "https://github.com/JohnMurray/busan"
 keywords = ["actor", "actors", "actor-system", "concurrent", "concurrency"]
 authors = ["John Murray"]
 
+autoexamples = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -26,6 +28,10 @@ prost-build = "0.11"
 ## --------------------------------------------------------------------------------
 ## Examples
 
-[[bin]]
+[[example]]
 name = "hello_world"
 path = "examples/hello_world/main.rs"
+
+[[example]]
+name = "ping_pong"
+path = "examples/ping_pong/main.rs"

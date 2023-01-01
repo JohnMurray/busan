@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::thread;
-use std::time::Duration;
 
 use crate::actor::{Actor, ActorInit};
 use crate::executor::thread_executor::ThreadExecutorFactory;
@@ -51,7 +49,7 @@ impl ActorSystem {
             .get("executor-0")
             .unwrap()
             .sender
-            .send(ExecutorCommands::SpawnActor(
+            .send(ExecutorCommands::AssignActor(
                 Box::new(A::init(init_msg)),
                 name,
             ))

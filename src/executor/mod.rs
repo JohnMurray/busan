@@ -2,10 +2,10 @@ pub(crate) mod thread_executor;
 
 use crossbeam_channel::{Receiver, Sender};
 
-use crate::actor::Actor;
+use crate::actor::{Actor, ActorAddress};
 
 pub enum ExecutorCommands {
-    SpawnActor(Box<dyn Actor>, String),
+    AssignActor(Box<dyn Actor>, String),
     Shutdown,
 }
 
@@ -17,7 +17,15 @@ pub trait ExecutorFactory {
 }
 
 pub trait Executor {
-    fn run(&mut self, receiver: Receiver<ExecutorCommands>);
+    fn run(self, receiver: Receiver<ExecutorCommands>);
+
+    // Given the name of an actor, return the address local to the executor
+    fn get_address(&self, actor_name: &str) -> ActorAddress;
+
+    // Given an actor, assign the actor to the executor. Note that the implementation
+    // does not require immediate assignment and there may be some delay based on
+    // the particular executor implementation.
+    fn assign_actor(&self, actor: Box<dyn Actor>, name: String);
 }
 
 /// ExecutorHandle contains all the context necessary for the control-thread, which
