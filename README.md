@@ -38,9 +38,11 @@ I don't have a long-term roadmap laid out for the project and I don't expect pla
 outside the short-term milestones. I'm currently using GitHub's Project feature to organize my work,
 which is publicly viewable [here][github_project]. Generally my plan looks like:
 
-  + `0.2.0` - Spawn actors, send and receive messages
+  + [`0.2.0`][m1] - Spawn actors, send and receive messages
   + `0.3.0` - Core features - lifecycle management, actor/work scheduler, etc.
   + `0.4.0` - Actor utilities - routers, timers, ask-pattern, behaviors, etc.
+
+  [m1]: https://github.com/JohnMurray/busan/milestone/1
 
 Beyond this, I don't have any defined plans. Things on my mind include:
 
