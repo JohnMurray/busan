@@ -57,37 +57,45 @@ case we would absolutely _not_ want `Sync`, but [negative_impls][neg_impl] is no
 feature. And even if it were, a struct could contain a field that was `Sync + Send` (such as
 an `Arc`). Allowing `Sync` to slip in could violate our strong encapsulation.
 
-Additionally, location transparency is an initial goal. This means beyond `Send` to allow
-for sending between threads, we need some form of serialization to support sending between
-processes or machines.
+Additionally, location transparency is an initial goal (even if distributed message sending
+is still a ways off). This means beyond `Send` to allow for sending between threads, we need
+some form of serialization to support sending between processes or machines.
 
 
   [neg_impl]: https://github.com/rust-lang/rust/issues/68318
 
 ## Options
 
-### Defer to the User
+### User Choice
 
-The simplest option is to simply "do nothing". In order to send messages locally (within the
-same process), it is only required that types implement the `Send` trait (and maybe the `Sync`
-trait). If a message needs to be sent outside of the current process, then it is up to the user
-to either ensure the data can be serialized or to explicitly handle serialization and
-deserialization.
+An option is to _not_ put any requirements on message sending, other than what the Rust
+type system will enforce. This would provide users the opportunity to side-step the
+strong isolation of the Actor Model and would also require a separate API for messages
+traveling outside of the process.
 
-This is the most flexible option, but has a few drawbacks:
-  + This is a violation of the Actor model, which means several promises (actor isolation,
-    simpler concurrency, location transparency, etc) are no longer feasible within the
-    framework.
-  + This exposes a potentially controversial amount of choice to the user.
-  + This handicaps future development of features/utilities or adds complexity of only
-    being able to apply features/utilities to a subset of applications.
-  + This requires additional rigor from developers to adhere to best practices.
+#### Pros
+
+  + Freedom and flexibility in types that can be sent, without need of specific serialization
+    formats or use/implementation of special macros/traits on types.
+  + Choice is serialization format (for remote messages)
+
+#### Cons
+
+  + Easy to violate principals of the Actor Model (potential foot-guns)
+  + No location transparency
+  + Separate APIs for local vs remote message passing
+  + Potential blocker for future functionality or utilities, or limits their use to a sub-set
+    of "good" applications
+  + Increased user complexity along with explosion of choices in how to construct and
+    coordinate actors.
+  + Strong use of "best practices" would be required to reap full benefits of the Actor Model
 
 
 ### Allow/Deny-List Specific Types
 
-Perhaps it is possible to block the types that are likely to cause "violations" of the
-actor model, such as `Arc` or `RC`.
+`Sync` is the bit that seems to really get types in trouble when it comes to adhering
+to the strong isolation principals of the Actor Model. An idea could be to simply block
+implementations of this trait (e.g. `Arc` or `Rc`).
 
 I don't have strong evidence here and this is mostly intuition. Type systems are complex,
 powerful ones even more so. I suspect, for the sophisticated user, this would be easy to
@@ -119,10 +127,6 @@ TK - Cons
   + Awkward API
   + CPU Cost
 
-### Parallel Serialization API
-
-TK: This could be an _optional_ API, as in it could be combined with a non-serizlized option which lands it
-    in the _realm_ of defer'ing to the user, but with added capabilities.
 
 ### TK: ???
 
