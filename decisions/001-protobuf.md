@@ -7,7 +7,7 @@ __2022-12-28__
 A core tenant of the Actor Model is communication through messages. This is separate from
 say a thread-based model in which coordination and communication is _typically_ handled through
 shared memory and involving locks and/or atomic operations. The Actor Model simplifies the
-communication and coordination model by limiting the mechanisms to exluslively message passing.
+communication and coordination model by limiting the mechanisms to exclusively message passing.
 
 This mechanism is both enforced by and allows for some notable properties of an Actor Model
 based system:
@@ -51,7 +51,7 @@ a decision must be made is in the construction of an API.
 All of the context above describes what is desired in a theoretical system, but how does
 that translate to constructing an API for sending messages?
 
-The minimum requirement for sending a message across threads (and of course Buson will build
+The minimum requirement for sending a message across threads (and of course Busan will build
 on top of existing concurrency primitives) is to implement `Send` (and maybe `Sync`). In our
 case we would absolutely _not_ want `Sync`, but [negative_impls][neg_impl] is not a standard
 feature. And even if it were, a struct could contain a field that was `Sync + Send` (such as
@@ -68,7 +68,7 @@ processes or machines.
 
 ### Defer to the User
 
-The simplist option is to simply "do nothing". In order to send messages locally (within the
+The simplest option is to simply "do nothing". In order to send messages locally (within the
 same process), it is only required that types implement the `Send` trait (and maybe the `Sync`
 trait). If a message needs to be sent outside of the current process, then it is up to the user
 to either ensure the data can be serialized or to explicitly handle serialization and
@@ -78,7 +78,7 @@ This is the most flexible option, but has a few drawbacks:
   + This is a violation of the Actor model, which means several promises (actor isolation,
     simpler concurrency, location transparency, etc) are no longer feasible within the
     framework.
-  + This exposes a potentially contoversial amount of choice to the user.
+  + This exposes a potentially controversial amount of choice to the user.
   + This handicaps future development of features/utilities or adds complexity of only
     being able to apply features/utilities to a subset of applications.
   + This requires additional rigor from developers to adhere to best practices.
@@ -91,11 +91,11 @@ actor model, such as `Arc` or `RC`.
 
 I don't have strong evidence here and this is mostly intuition. Type systems are complex,
 powerful ones even more so. I suspect, for the sophisticated user, this would be easy to
-circumvent. It may _additionally_ be the case that this is too complex of a requirment to
-soundingly implement.
+circumvent. It may _additionally_ be the case that this is too complex of a requirement to
+implement soundly.
 
 If the feature is too complex to get right or easily circumvented, then it would be more
-beneficial (for both library maintainers and users) if this choice is deffered to the user,
+beneficial (for both library maintainers and users) if this choice is deferred to the user,
 as limited value is being provided.
 
 
@@ -103,12 +103,12 @@ as limited value is being provided.
 
 Require that all messages passed are compatible with a standard serialization format, such
 as Protobuf. Invoke serialization/deserialization with every message send to _fully ensure_
-no state is shared, purposefully or inadvertantly.
+no state is shared, purposefully or inadvertently.
 
 This approach is _ideal_ in that it most closely matches the ideal of the Actor Model with
 respect to message passing. Messages are immutable bits of data which means that all of the
-promises of the model are satisfyable, such as location transparency, actor isolation (as
-sofar as inadvertant state sharing), TK ... (continue list of typical model advantages)
+promises of the model are satisfiable, such as location transparency, actor isolation (as
+sofar as inadvertent state sharing), TK ... (continue list of typical model advantages)
 
 TK: Go on to talk about
   + protocol/message evolution (distributed systems)
