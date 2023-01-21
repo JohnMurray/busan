@@ -100,13 +100,6 @@ impl Executor for ThreadExecutor {
     }
 
     fn assign_actor(&self, actor: Box<dyn Actor>, name: String) {
-        // TODO: this should be a non-blocking send to avoid dead-locking on a full
-        //       command-queue.
-        // However, need to think about how to allow for many actors to be created and used
-        // within a single actor loop. :thinkies:
-        // XXX: For now, this means that creating + 'asking' an actor would be a deadlock
-        self.command_channel
-            .send(ExecutorCommands::AssignActor(actor, name))
-            .unwrap();
+        self.runtime_manager.assign_actor(actor, name);
     }
 }

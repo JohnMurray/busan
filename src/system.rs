@@ -216,7 +216,7 @@ impl RuntimeManagerRef {
     /// Request that a new actor be assigned to a runtime executor. This may be called when assigning
     /// either a root actor or a child actor. This should be used to avoid blocking actor creation
     /// on a single executor.
-    pub fn assign_actor<A: Actor + 'static>(&self, actor: Box<A>, name: String) {
+    pub fn assign_actor(&self, actor: Box<dyn Actor>, name: String) {
         self.manager_command_channel
             .send(ManagerCommands::AssignActor(actor, name))
             .unwrap();
