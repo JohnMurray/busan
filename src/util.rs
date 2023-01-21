@@ -1,5 +1,8 @@
 use crossbeam_channel::{Receiver, Sender};
 
+/// A simple wrapper around channels to abstract out the specific channel implementation
+/// being used for sending and receiving. This ideally should be the only module that
+/// import anything from crossbeam_channel.
 pub struct CommandChannel<T> {
     pub(self) sender: Sender<T>,
     pub(self) receiver: Receiver<T>,

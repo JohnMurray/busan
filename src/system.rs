@@ -9,7 +9,12 @@ use crate::util::CommandChannel;
 
 const NUM_EXECUTORS: usize = 4;
 
-/// Global value for a collection of actors that may communicate with local-only addresses.
+/// ActorSystem is a user-facing handle/abstraction for the actor system. It exposes an
+/// interface for creating the system, spawning the root actor, and shutting down or awaiting
+/// shutdown of te system.
+///
+/// Once the ActorSystem is initialized through the `init()` function, control and management
+/// of the executors and actors is delegated to the RuntimeManager.
 pub struct ActorSystem {
     executor_factory: Box<dyn ExecutorFactory>,
     executors: HashMap<String, ExecutorHandle>,
@@ -19,6 +24,9 @@ pub struct ActorSystem {
 }
 
 impl ActorSystem {
+    /// Initialize the actor system. This function will spawn the executors and the runtime
+    /// manager. The returned ActorSystem may be used to spawn the root actor and to eventually
+    /// either await shutdown or shutdown the system.
     pub fn init() -> ActorSystem {
         let mut runtime_manager = RuntimeManager::init();
         let executor_factory = Box::new(ThreadExecutorFactory {});
@@ -52,6 +60,10 @@ impl ActorSystem {
         }
     }
 
+    /// Spawn the root actor for the system. The root actor will be the actor at the top
+    /// of the actor hierarchy and all other actors must be created from here. Note that
+    /// there may only be a single root actor per system and can, in some ways, be considered
+    /// the "main" function of the actor system.
     pub fn spawn_root_actor<B, A: ActorInit<Init = B> + Actor + 'static>(
         &mut self,
         name: String,
@@ -68,7 +80,8 @@ impl ActorSystem {
             .assign_actor(Box::new(A::init(init_msg)), name);
     }
 
-    /// Send shutdown message to all executors and wait for them to finish
+    /// Send shutdown message to all executors and wait for them to finish. This includes
+    /// waiting for the runtime manager to shutdown as well.
     pub fn shutdown(self) {
         self.runtime_manager.shutdown_system();
         self.await_shutdown();
@@ -76,7 +89,7 @@ impl ActorSystem {
 
     /// Await shutdown of all executors. Similar to shutdown, but doesn't send
     /// shutdown messages to begin shutdown. Will wait indefinitely until all
-    /// executors have shutdown.
+    /// executors and the runtime manager have shutdown.
     pub fn await_shutdown(self) {
         self.executors
             .into_iter()
@@ -85,6 +98,13 @@ impl ActorSystem {
     }
 }
 
+/// `RuntimeManager` is an administrative process that manages the executors and runs in
+/// it's own thread. It is responsible for coordinating amongst executors as well as
+/// proxying commands from the `ActorSystem`.
+///
+/// For a full list of commands, see the `RuntimeManagerCommand` enum.
+///
+/// For the public API of the `RuntimeManager`, see the `RuntimeManagerRef` struct.
 struct RuntimeManager {
     /// Map of executor names to their command-channel (for sending commands)
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
@@ -161,6 +181,8 @@ impl RuntimeManager {
     }
 }
 
+/// `RuntimeManagerRef` is a handle for communicating to the runtime manager in a thread-safe
+/// manner. The `RuntimeManager` may only be interacted with through the `RuntimeManagerRef`.
 pub struct RuntimeManagerRef {
     manager_command_channel: CommandChannel<ManagerCommands>,
 }
@@ -172,12 +194,17 @@ impl RuntimeManagerRef {
         }
     }
 
+    /// Signal to the runtime manager to begin shutting down the system. This will result in
+    /// shutdown notifications being sent to all of the executors.
     pub fn shutdown_system(&self) {
         self.manager_command_channel
             .send(ManagerCommands::Shutdown)
             .unwrap();
     }
 
+    /// Signal to the runtime manager the the executor has completed (or is very near completing)
+    /// shutdown. This should only be called by the executor itself as the final step of it's
+    /// shutdown process.
     pub fn notify_shutdown(&self, executor_name: String) {
         self.manager_command_channel
             .send(ManagerCommands::ExecutorShutdown {
@@ -186,6 +213,9 @@ impl RuntimeManagerRef {
             .unwrap();
     }
 
+    /// Request that a new actor be assigned to a runtime executor. This may be called when assigning
+    /// either a root actor or a child actor. This should be used to avoid blocking actor creation
+    /// on a single executor.
     pub fn assign_actor<A: Actor + 'static>(&self, actor: Box<A>, name: String) {
         self.manager_command_channel
             .send(ManagerCommands::AssignActor(actor, name))
@@ -193,8 +223,16 @@ impl RuntimeManagerRef {
     }
 }
 
+/// `ManagerCommands` is the set of commands that the `RuntimeManager` can receive from the
+/// `RuntimeRef`. While this is purely an internal struct, it can be useful in understanding
+/// the behaviors of the `RuntimeManager`.
 enum ManagerCommands {
+    /// Request that the actor system shutdown
     Shutdown,
+
+    /// Notification from an executor (identified by the name field) that it has completed shutdown
     ExecutorShutdown { name: String },
+
+    /// Requests that a newly created actor be assigned to an executor
     AssignActor(Box<dyn Actor>, String),
 }
