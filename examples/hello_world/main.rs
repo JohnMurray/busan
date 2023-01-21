@@ -9,9 +9,10 @@ pub mod hello_world {
 }
 
 fn main() {
-    let system = ActorSystem::init();
-    let mut init = hello_world::actor::Init::default();
-    init.greeting = "Hi there!".to_string();
+    let mut system = ActorSystem::init();
+    let init = hello_world::actor::Init {
+        greeting: "Hi there!".to_string(),
+    };
     system.spawn_root_actor::<_, Greet>("greeter".to_string(), &init);
 
     thread::sleep(std::time::Duration::from_secs(1));
