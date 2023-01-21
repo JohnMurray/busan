@@ -1,8 +1,8 @@
 pub(crate) mod thread_executor;
 
-use crossbeam_channel::{Receiver, Sender};
-
 use crate::actor::{Actor, ActorAddress};
+use crate::system::RuntimeManagerRef;
+use crate::util::CommandChannel;
 
 pub enum ExecutorCommands {
     AssignActor(Box<dyn Actor>, String),
@@ -13,11 +13,16 @@ pub enum ExecutorCommands {
 pub trait ExecutorFactory {
     // Spawn an executor with a given name. Tha name will be used by the
     // executor for routing messages to the correct actor.
-    fn spawn_executor(&self, name: String) -> ExecutorHandle;
+    fn spawn_executor(
+        &self,
+        name: String,
+        command_channel: CommandChannel<ExecutorCommands>,
+        manager_ref: RuntimeManagerRef,
+    ) -> ExecutorHandle;
 }
 
 pub trait Executor {
-    fn run(self, receiver: Receiver<ExecutorCommands>);
+    fn run(self);
 
     // Given the name of an actor, return the address local to the executor
     fn get_address(&self, actor_name: &str) -> ActorAddress;
@@ -32,23 +37,18 @@ pub trait Executor {
 /// amounts to a channel to send commands through and a way to close or await closing
 /// of the executor.
 pub struct ExecutorHandle {
-    pub sender: Sender<ExecutorCommands>,
     close_fn: Box<dyn FnOnce() -> ()>,
 }
 
 impl ExecutorHandle {
-    pub fn new<F: FnOnce() -> () + 'static>(
-        sender: Sender<ExecutorCommands>,
-        close_fn: F,
-    ) -> ExecutorHandle {
+    pub fn new<F: FnOnce() -> () + 'static>(close_fn: F) -> ExecutorHandle {
         ExecutorHandle {
-            sender,
             close_fn: Box::new(close_fn),
         }
     }
 
     /// Close the executor handle. Note that this can only be called once and consumes itself.
-    pub fn await_close(self) {
+    pub(crate) fn await_close(self) {
         (self.close_fn)();
     }
 }

@@ -2,6 +2,7 @@ extern crate busan;
 
 use busan::actor::{Actor, ActorInit, Context};
 use busan::system::ActorSystem;
+use std::thread;
 
 struct Ping {}
 struct Pong {}
@@ -38,8 +39,9 @@ impl Actor for Ping {
 impl Actor for Pong {}
 
 fn main() {
-    let system = ActorSystem::init();
+    let mut system = ActorSystem::init();
     system.spawn_root_actor::<_, Ping>("ping".to_string(), &());
 
-    system.await_shutdown();
+    thread::sleep(std::time::Duration::from_secs(1));
+    system.shutdown();
 }
