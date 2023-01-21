@@ -1,6 +1,7 @@
-## 0.1.2
+## 0.2.0 [wip]
 
   + Added support for spawning actors
+  + Introduced runtime manager and round-robin spawn strategy
 
 ## 0.1.1
 
