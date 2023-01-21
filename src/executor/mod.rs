@@ -1,42 +1,12 @@
 pub(crate) mod thread_executor;
 
-use crossbeam_channel::{Receiver, Sender};
-
 use crate::actor::{Actor, ActorAddress};
 use crate::system::RuntimeManagerRef;
+use crate::util::CommandChannel;
 
 pub enum ExecutorCommands {
     AssignActor(Box<dyn Actor>, String),
     Shutdown,
-}
-
-pub struct CommandChannel<T> {
-    pub(self) sender: Sender<T>,
-    pub(self) receiver: Receiver<T>,
-}
-
-impl<T> CommandChannel<T> {
-    pub fn new() -> CommandChannel<T> {
-        let (sender, receiver) = crossbeam_channel::unbounded();
-        CommandChannel { sender, receiver }
-    }
-
-    pub fn send(&self, command: T) -> Result<(), crossbeam_channel::SendError<T>> {
-        self.sender.send(command)
-    }
-
-    pub fn recv(&self) -> Result<T, crossbeam_channel::RecvError> {
-        self.receiver.recv()
-    }
-}
-
-impl<T> Clone for CommandChannel<T> {
-    fn clone(&self) -> Self {
-        CommandChannel {
-            sender: self.sender.clone(),
-            receiver: self.receiver.clone(),
-        }
-    }
 }
 
 /// responsible for creating an executor

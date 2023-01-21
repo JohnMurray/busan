@@ -4,7 +4,8 @@ use std::thread;
 
 use crate::actor::{Actor, ActorInit};
 use crate::executor::thread_executor::ThreadExecutorFactory;
-use crate::executor::{CommandChannel, ExecutorCommands, ExecutorFactory, ExecutorHandle};
+use crate::executor::{ExecutorCommands, ExecutorFactory, ExecutorHandle};
+use crate::util::CommandChannel;
 
 const NUM_EXECUTORS: usize = 4;
 
@@ -153,7 +154,7 @@ impl RuntimeManager {
 
     fn get_next_executor(&mut self) -> String {
         let mut iter = self.executor_command_channels.iter();
-        if self.rohnd_robin_state >= iter.len() {
+        if self.round_robin_state >= iter.len() {
             self.round_robin_state = 0;
         }
         iter.nth(self.round_robin_state).unwrap().0.clone()

@@ -69,8 +69,8 @@ impl Executor for ThreadExecutor {
         const SLEEP_DURATION_MS: u64 = 1;
 
         loop {
-            if !self.command_channel.receiver.is_empty() {
-                match self.command_channel.receiver.recv().unwrap() {
+            if !self.command_channel.recv_is_empty() {
+                match self.command_channel.recv().unwrap() {
                     ExecutorCommands::AssignActor(mut actor, name) => {
                         debug!("received assign-root-actor command for actor {}", name);
                         self.assert_name_unique(&name);
@@ -106,7 +106,6 @@ impl Executor for ThreadExecutor {
         // within a single actor loop. :thinkies:
         // XXX: For now, this means that creating + 'asking' an actor would be a deadlock
         self.command_channel
-            .sender
             .send(ExecutorCommands::AssignActor(actor, name))
             .unwrap();
     }
