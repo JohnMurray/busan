@@ -1,6 +1,7 @@
 pub(crate) mod thread_executor;
 
 use crate::actor::{Actor, ActorAddress};
+use crate::config::ExecutorType;
 use crate::system::RuntimeManagerRef;
 use crate::util::CommandChannel;
 
@@ -50,5 +51,13 @@ impl ExecutorHandle {
     /// Close the executor handle. Note that this can only be called once and consumes itself.
     pub(crate) fn await_close(self) {
         (self.close_fn)();
+    }
+}
+
+/// A static function that can be used to convert the config ExecutorType into a concrete
+/// ExecutorFactory.
+pub fn get_executor_factory(executor_type: &ExecutorType) -> Box<dyn ExecutorFactory> {
+    match executor_type {
+        ExecutorType::Thread => Box::new(thread_executor::ThreadExecutorFactory {}),
     }
 }

@@ -17,6 +17,7 @@ autoexamples = false
 [dependencies]
 crossbeam-channel = "0.5"
 log = "0.4"
+num_cpus = "1.13"
 prost = "0.11"
 prost-types = "0.11"
 
