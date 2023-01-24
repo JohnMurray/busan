@@ -1,6 +1,7 @@
 extern crate busan;
 
 use busan::actor::{Actor, ActorInit};
+use busan::config::ActorSystemConfig;
 use busan::system::ActorSystem;
 use std::thread;
 
@@ -9,7 +10,7 @@ pub mod hello_world {
 }
 
 fn main() {
-    let mut system = ActorSystem::init();
+    let mut system = ActorSystem::init(ActorSystemConfig::default());
     let init = hello_world::actor::Init {
         greeting: "Hi there!".to_string(),
     };

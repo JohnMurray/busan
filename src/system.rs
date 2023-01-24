@@ -3,11 +3,9 @@ use std::collections::HashMap;
 use std::thread;
 
 use crate::actor::{Actor, ActorInit};
-use crate::executor::thread_executor::ThreadExecutorFactory;
-use crate::executor::{ExecutorCommands, ExecutorFactory, ExecutorHandle};
+use crate::config;
+use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorFactory, ExecutorHandle};
 use crate::util::CommandChannel;
-
-const NUM_EXECUTORS: usize = 4;
 
 /// ActorSystem is a user-facing handle/abstraction for the actor system. It exposes an
 /// interface for creating the system, spawning the root actor, and shutting down or awaiting
@@ -27,13 +25,15 @@ impl ActorSystem {
     /// Initialize the actor system. This function will spawn the executors and the runtime
     /// manager. The returned ActorSystem may be used to spawn the root actor and to eventually
     /// either await shutdown or shutdown the system.
-    pub fn init() -> ActorSystem {
+    pub fn init(config: config::ActorSystemConfig) -> ActorSystem {
+        config.validate().unwrap();
+
         let mut runtime_manager = RuntimeManager::init();
-        let executor_factory = Box::new(ThreadExecutorFactory {});
+        let executor_factory = get_executor_factory(&config.executor_config.executor_type);
         let mut executors = HashMap::new();
 
         // create a pre-configured number of executors
-        for i in 0..NUM_EXECUTORS {
+        for i in 0..(config.executor_config.num_executors) {
             let command_channel = CommandChannel::new();
             let executor_name = format!("executor-{}", i);
             let executor_handle = executor_factory.spawn_executor(
