@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
-use crate::actor::{Actor, ActorAddress, Context};
+use crate::actor::{ActorCell, Context};
 use crate::executor::{
     CommandChannel, Executor, ExecutorCommands, ExecutorFactory, ExecutorHandle,
 };
@@ -31,7 +31,7 @@ struct ThreadExecutor {
 
     // map of actor names to actors where the key (actor name) is part of the address-to-actor
     // resolution
-    actors: HashMap<String, Box<dyn Actor>>,
+    actor_cells: HashMap<String, ActorCell>,
 
     // Handle for sending commands to the current executor. Useful for spawning new actors
     // on the main event loop, or any action that may need to be performed in a slightly
@@ -50,7 +50,7 @@ impl ThreadExecutor {
     ) -> ThreadExecutor {
         ThreadExecutor {
             name,
-            actors: HashMap::new(),
+            actor_cells: HashMap::new(),
             command_channel,
             runtime_manager,
         }
@@ -59,7 +59,7 @@ impl ThreadExecutor {
     /// Utility function for ensuring that the name of an actor is unique. Useful before
     /// inserting a new entry in the actor store (when creating actors).
     fn assert_name_unique(&self, name: &str) {
-        if self.actors.contains_key(name) {
+        if self.actor_cells.contains_key(name) {
             panic!("Actor name {} already exists", name);
         }
     }
@@ -71,12 +71,18 @@ impl Executor for ThreadExecutor {
         loop {
             if !self.command_channel.recv_is_empty() {
                 match self.command_channel.recv().unwrap() {
-                    ExecutorCommands::AssignActor(mut actor, name) => {
-                        debug!("received assign-root-actor command for actor {}", name);
-                        self.assert_name_unique(&name);
-                        trace!("calling before_start for actor {}", name);
-                        actor.before_start(Context::new(&mut self));
-                        self.actors.insert(name.clone(), actor);
+                    ExecutorCommands::AssignActor(mut cell) => {
+                        debug!(
+                            "received assign-root-actor command for actor {}",
+                            &cell.address.uri
+                        );
+                        self.assert_name_unique(&cell.address.uri);
+                        trace!("calling before_start for actor {}", &cell.address.uri);
+                        cell.actor.before_start(Context {
+                            address: &cell.address,
+                            runtime_manager: &self.runtime_manager,
+                        });
+                        self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
                     ExecutorCommands::Shutdown => {
                         debug!("received shutdown command");
@@ -90,16 +96,5 @@ impl Executor for ThreadExecutor {
         }
 
         self.runtime_manager.notify_shutdown(self.name);
-    }
-
-    fn get_address(&self, actor_name: &str) -> ActorAddress {
-        ActorAddress {
-            name: actor_name.to_string(),
-            executor_name: self.name.clone(),
-        }
-    }
-
-    fn assign_actor(&self, actor: Box<dyn Actor>, name: String) {
-        self.runtime_manager.assign_actor(actor, name);
     }
 }

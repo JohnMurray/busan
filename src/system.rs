@@ -1,8 +1,9 @@
+use crossbeam_channel::{unbounded, Sender};
 use log::debug;
 use std::collections::HashMap;
 use std::thread;
 
-use crate::actor::{Actor, ActorInit};
+use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit};
 use crate::config;
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorFactory, ExecutorHandle};
 use crate::util::CommandChannel;
@@ -77,7 +78,7 @@ impl ActorSystem {
 
         self.root_actor_assigned = true;
         self.runtime_manager
-            .assign_actor(Box::new(A::init(init_msg)), name);
+            .assign_actor(Box::new(A::init(init_msg)), ActorAddress::new_root(&name));
     }
 
     /// Send shutdown message to all executors and wait for them to finish. This includes
@@ -108,6 +109,7 @@ impl ActorSystem {
 struct RuntimeManager {
     /// Map of executor names to their command-channel (for sending commands)
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
+    actor_registry: HashMap<String, Sender<Box<dyn prost::Message>>>,
 
     manager_command_channel: CommandChannel<ManagerCommands>,
 
@@ -119,6 +121,7 @@ impl RuntimeManager {
     fn init() -> RuntimeManager {
         RuntimeManager {
             executor_command_channels: HashMap::new(),
+            actor_registry: HashMap::new(),
             manager_command_channel: CommandChannel::new(),
             round_robin_state: 0,
             shutdown_initiated: false,
@@ -148,7 +151,6 @@ impl RuntimeManager {
                         });
                 }
 
-                // TODO: Actually send this message from the Executors
                 Ok(ManagerCommands::ExecutorShutdown { name }) => {
                     if self.executor_command_channels.contains_key(&name) {
                         self.executor_command_channels.remove(&name);
@@ -157,12 +159,19 @@ impl RuntimeManager {
                         }
                     }
                 }
-                Ok(ManagerCommands::AssignActor(actor, name)) => {
+                Ok(ManagerCommands::AssignActor { actor, address }) => {
                     let executor_name = self.get_next_executor();
+                    let (sender, receiver) = unbounded::<Box<dyn prost::Message>>();
+                    let address_uri = address.uri.clone();
+                    address.set_mailbox(sender.clone());
+                    let cell = ActorCell::new(actor, receiver, address);
+
+                    self.actor_registry.insert(address_uri, sender);
+
                     self.executor_command_channels
                         .get(&executor_name)
                         .unwrap()
-                        .send(ExecutorCommands::AssignActor(actor, name))
+                        .send(ExecutorCommands::AssignActor(cell))
                         .unwrap();
                 }
                 Err(_) => {}
@@ -216,9 +225,9 @@ impl RuntimeManagerRef {
     /// Request that a new actor be assigned to a runtime executor. This may be called when assigning
     /// either a root actor or a child actor. This should be used to avoid blocking actor creation
     /// on a single executor.
-    pub fn assign_actor(&self, actor: Box<dyn Actor>, name: String) {
+    pub fn assign_actor(&self, actor: Box<dyn Actor>, address: ActorAddress) {
         self.manager_command_channel
-            .send(ManagerCommands::AssignActor(actor, name))
+            .send(ManagerCommands::AssignActor { actor, address })
             .unwrap();
     }
 }
@@ -233,6 +242,12 @@ enum ManagerCommands {
     /// Notification from an executor (identified by the name field) that it has completed shutdown
     ExecutorShutdown { name: String },
 
-    /// Requests that a newly created actor be assigned to an executor
-    AssignActor(Box<dyn Actor>, String),
+    /// A request that a newly constructed `Actor` be "realized" in the actor system.
+    ///   + Wrap the actor into an `ActorCell` with a mailbox and address
+    ///   + Store the `ActorAddress` in a global registry for address resolution
+    ///   + Assign the actor to an executor
+    AssignActor {
+        actor: Box<dyn Actor>,
+        address: ActorAddress,
+    },
 }

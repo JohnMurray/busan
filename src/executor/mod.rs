@@ -1,12 +1,12 @@
 pub(crate) mod thread_executor;
 
-use crate::actor::{Actor, ActorAddress};
+use crate::actor::ActorCell;
 use crate::config::ExecutorType;
 use crate::system::RuntimeManagerRef;
 use crate::util::CommandChannel;
 
 pub enum ExecutorCommands {
-    AssignActor(Box<dyn Actor>, String),
+    AssignActor(ActorCell),
     Shutdown,
 }
 
@@ -24,14 +24,6 @@ pub trait ExecutorFactory {
 
 pub trait Executor {
     fn run(self);
-
-    // Given the name of an actor, return the address local to the executor
-    fn get_address(&self, actor_name: &str) -> ActorAddress;
-
-    // Given an actor, assign the actor to the executor. Note that the implementation
-    // does not require immediate assignment and there may be some delay based on
-    // the particular executor implementation.
-    fn assign_actor(&self, actor: Box<dyn Actor>, name: String);
 }
 
 /// ExecutorHandle contains all the context necessary for the control-thread, which
