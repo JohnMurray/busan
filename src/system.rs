@@ -1,5 +1,5 @@
-use crossbeam_channel::{unbounded, Sender};
-use log::debug;
+use crossbeam_channel::{bounded, unbounded, Sender};
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::thread;
 
@@ -174,6 +174,23 @@ impl RuntimeManager {
                         .send(ExecutorCommands::AssignActor(cell))
                         .unwrap();
                 }
+                Ok(ManagerCommands::ResolveAddress {
+                    address_uri,
+                    return_channel,
+                }) => {
+                    let mailbox_lookup = self.actor_registry.get(&address_uri);
+                    let result = if mailbox_lookup.is_none() {
+                        return_channel.try_send(None)
+                    } else {
+                        return_channel.try_send(Some(mailbox_lookup.unwrap().clone()))
+                    };
+                    if result.is_err() {
+                        warn!(
+                            "Failed to send address resolution result on return channel: {}",
+                            result.err().unwrap(),
+                        );
+                    }
+                }
                 Err(_) => {}
             }
         }
@@ -230,6 +247,24 @@ impl RuntimeManagerRef {
             .send(ManagerCommands::AssignActor { actor, address })
             .unwrap();
     }
+
+    /// Resolve an address to mailbox by looking up the actor in the global registry. Note that this
+    /// will block until the management thread has performed the lookup.
+    pub fn resolve_address(
+        &self,
+        address: &ActorAddress,
+    ) -> Option<Sender<Box<dyn prost::Message>>> {
+        let uri = address.uri.clone();
+        let (sender, receiver) = bounded::<Option<Sender<Box<dyn prost::Message>>>>(1);
+        self.manager_command_channel
+            .send(ManagerCommands::ResolveAddress {
+                address_uri: uri,
+                return_channel: sender,
+            })
+            .unwrap();
+
+        receiver.recv().unwrap()
+    }
 }
 
 /// `ManagerCommands` is the set of commands that the `RuntimeManager` can receive from the
@@ -249,5 +284,12 @@ enum ManagerCommands {
     AssignActor {
         actor: Box<dyn Actor>,
         address: ActorAddress,
+    },
+
+    /// A request to resolve an actor address to a mailbox. This is given a direct return
+    /// channel so the sender can block on the result of the lookup if desired.
+    ResolveAddress {
+        address_uri: String,
+        return_channel: Sender<Option<Sender<Box<dyn prost::Message>>>>,
     },
 }
