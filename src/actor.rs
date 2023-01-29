@@ -105,7 +105,6 @@ impl ActorAddress {
         }
     }
 
-    // TODO: Implement resolution so this is actually used
     pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn prost::Message>>) {
         *self.mailbox.borrow_mut() = Some(mailbox);
     }
