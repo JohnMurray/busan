@@ -1,11 +1,9 @@
-use crate::executor::Executor;
+use crate::system::RuntimeManagerRef;
+use crossbeam_channel::{Receiver, Sender};
+use std::cell::RefCell;
 
 /// place-holder trait for an actor, this might change at some point
 pub trait Actor: Send {
-    // fn init(init_msg: &dyn prost::Message) -> Self
-    // where
-    //     Self: Sized;
-
     fn before_start(&mut self, _ctx: Context) {}
 }
 
@@ -28,40 +26,86 @@ pub trait ActorInit {
 
 /// ActorCell is the wrapper to the user-defined actor, wrapping the mailbox parent references,
 /// and other actor-related information that is useful internally.
-pub(crate) struct ActorCell {
-    parent: Option<ActorAddress>,
-    actor: Box<dyn Actor>,
-    mailbox: Vec<Box<dyn prost::Message>>,
+pub struct ActorCell {
+    pub(crate) actor: Box<dyn Actor>,
+    pub(crate) mailbox: Receiver<Box<dyn prost::Message>>,
+    pub(crate) address: ActorAddress,
 }
 
-impl ActorCell {}
+impl ActorCell {
+    pub fn new(
+        actor: Box<dyn Actor>,
+        mailbox: Receiver<Box<dyn prost::Message>>,
+        address: ActorAddress,
+    ) -> Self {
+        Self {
+            actor,
+            mailbox,
+            address,
+        }
+    }
+}
 
 /// Actor context object used for performing actions that interact with the running
 /// actor-system, such as spawning new actors.
-pub struct Context<'a> {
-    executor: &'a mut dyn Executor,
+pub struct Context<'a, 'b> {
+    pub(crate) address: &'a ActorAddress,
+    pub(crate) runtime_manager: &'b RuntimeManagerRef,
 }
 
-impl Context<'_> {
-    pub fn new(executor: &mut dyn Executor) -> Context {
-        Context { executor }
-    }
-
+impl Context<'_, '_> {
     /// Create a new (child) actor. Note that this may be a delayed action and the actor
     /// may not be created immediately.
+    /// TODO: Ensure that actor names are unique
     pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
         &self,
         name: String,
         init_msg: &B,
     ) -> ActorAddress {
-        self.executor
-            .assign_actor(Box::new(A::init(init_msg)), name.clone());
-        self.executor.get_address(&name)
+        let address = ActorAddress::new_child(self.address, &name);
+        self.runtime_manager
+            .assign_actor(Box::new(A::init(init_msg)), address.clone());
+        address
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct ActorAddress {
-    pub name: String,
-    pub executor_name: String,
+    pub(crate) uri: String,
+
+    /// mailbox is a RefCell containing an optional sender. ActorAddresses may be created from
+    /// just a path, but once a message is sent that path will need to resolve to a mailbox. Once
+    /// the mailbox is resolved, it can be stored here for future use.
+    pub(crate) mailbox: RefCell<Option<Sender<Box<dyn prost::Message>>>>,
+}
+
+impl Clone for ActorAddress {
+    fn clone(&self) -> Self {
+        Self {
+            uri: self.uri.clone(),
+            mailbox: RefCell::new(self.mailbox.borrow().clone()),
+        }
+    }
+}
+
+impl ActorAddress {
+    pub(crate) fn new_child(parent: &ActorAddress, name: &String) -> Self {
+        let uri = format!("{}/{}", parent.uri, name);
+        Self {
+            uri,
+            mailbox: RefCell::new(None),
+        }
+    }
+
+    pub(crate) fn new_root(name: &String) -> Self {
+        let uri = format!("local:/{}", name);
+        Self {
+            uri,
+            mailbox: RefCell::new(None),
+        }
+    }
+
+    pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn prost::Message>>) {
+        *self.mailbox.borrow_mut() = Some(mailbox);
+    }
 }
