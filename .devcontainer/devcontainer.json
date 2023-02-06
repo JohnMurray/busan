@@ -6,5 +6,12 @@
        "profile": "complete"
     },
     "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {}
-  }
+},
+"customizations": {
+	"vscode": {
+		"extensions": [
+			"vscodevim.vim"
+		]
+	}
+}
 }
