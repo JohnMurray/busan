@@ -1,0 +1,10 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+       "version": "latest",
+       "profile": "complete"
+    },
+    "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {}
+  }
+}
