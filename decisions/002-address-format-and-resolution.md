@@ -3,12 +3,10 @@ __2023-02-10__
 
 ## Context/Problem
 
-The following are properties intrinsic to actor systems:
-
-  + Actors communicate asynchronously by sending messages
-  + Actor state is strongly encapsulated
-  + Actors (with the exception of the "root" actor) are created by other actors
-
+Message based communication between strongly encapsulated actors is the foundation of the
+actor model. Actors are also a unit of concurrency and thus the combination of these attributes
+leads toward the direction of needing "references" or "addresses" by which to direct
+communication.
 
 ## Constraints
 
@@ -24,6 +22,8 @@ The following are properties intrinsic to actor systems:
   shouldn't make internal changes later more difficult.
     + Example: Using the ID of the executor in the address would prevent us from moving actors
       between schedulers.
+    + Example: Addresses are typically _highly shared_ objects within an actor system, these should
+      not be insanely expensive objects.
 + __User Friendly / Meaningful__ - The address is a very user-facing aspect of the framework.  As
   such, it should be friendly to users and ideally the value of an address should be meaningful.
   For example, if the address is simply a hash (e.g. SAH256), that is not a meaningful value for
@@ -32,8 +32,6 @@ The following are properties intrinsic to actor systems:
 
 ## Options
 
-List the options that are available. This section may also list some of the pros and cons (in an
-objective fasion)
 
 ## Choice
 
