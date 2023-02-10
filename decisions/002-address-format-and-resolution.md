@@ -1,4 +1,4 @@
-# Decision 001: Protobuf Messages
+# Decision 003: Address Format & Resolution
 __2023-02-10__
 
 ## Context/Problem
@@ -28,10 +28,60 @@ communication.
   such, it should be friendly to users and ideally the value of an address should be meaningful.
   For example, if the address is simply a hash (e.g. SAH256), that is not a meaningful value for
   users if they were to print out the address or inspect it during debugging.
++ __Uniqueness__ - Names must be unique for the lifetime of the actor system. This means if an actor
+  is spanwed with a given name of `"A"` and that actor terminates. Another actor with the given name
+  `"A"` must not have the same address. This prevents accidental communication lines and encourages
+  that addresses are discovered through direct address sharing.
 
 
 ## Options
 
+### Flat Naming
+
++ The actor system is encoded with `local:/` prefix to signify an address local to the current
+  actor system (with the assumption that remote systems will have a different prefix)
++ Actors are created with a name given by the user
++ Uniqueness is guaranteed by appending a number to the end of the given name (e.g. `-0`, `-1`, etc.)
+
+The API from the user would look like:
+
+```rust
+impl Actor for Ping {
+    fn before_start(&mut self, ctx: Context) {
+        let addr = ctx.spawn_child::<_, Pong>("pong".to_string(), &());
+        let addr2 = ctx.spawn_child::<_, Pong>("pong".to_string(), &());
+    }
+}
+```
+
+If we were to debug print the value of `addr` we would see:
+
+```text
+local:/pong
+```
+
+and if we were to debug print the value of `addr2` we would see:
+
+```text
+local:/pong-1
+```
+
+`local:/pong` is synonymous with `local:/pong-0`, but the `-0` is excluded for general readability
+by users.
+
+Parents are encoded with an internal pointer. In the case of our example, the parent is the `Ping`
+actor. An example of what this could look like:
+
+```rust
+println!("{:?} -> {:?}", addr.parent, addr); 
+// local:/ping-3 -> local:/pong
+```
+
+Finding the heirarchy of parents could be done by repeatedly calling `.parent` until either the root
+Actor is required or until `.parent` returned some form of "empty" value.
+
+
+### Hierarchic Naming
 
 ## Choice
 
