@@ -5,23 +5,23 @@ __2023-02-10__
 
 Message based communication between strongly encapsulated actors is the foundation of the
 actor model. Actors are also a unit of concurrency and thus the combination of these attributes
-leads toward the direction of needing "references" or "addresses" by which to direct
+leads toward the direction of needing "references" or "addresses" by which to route
 communication.
 
 ## Constraints
 
 + __Location transparency__ - Actors may be local or remote, but communication patterns are
-  consistent regardless of location. This is necessary pre-condition to building great distributed
+  consistent regardless of location. This is a necessary pre-condition to building great distributed
   actor support.
 + __Supervision Trees__ - Actors naturally create tree-like structures given that actors may only
-  be spawned by other actors, creating a parent/children relationship. While this relationship does
-  not _have_ to be encoded in address format, the address should not _prevent_ the encoding of this
-  information somewhere (even if private).
+  be spawned by other actors, creating a parent/children relationships. While this relationship does
+  not _have_ to be encoded in the address format, the address should not _prevent_ the encoding of
+  this information somewhere (even if private).
 + __Optimization Friendly__ - Addressing (and address resolution) should not be too perscriptive
   in how the underlying system works. The solution does not need to be performant today, but it
-  shouldn't make internal changes later more difficult.
+  shouldn't make internal changes more difficult later.
     + Example: Using the ID of the executor in the address would prevent us from moving actors
-      between schedulers.
+      between executors.
     + Example: Addresses are typically _highly shared_ objects within an actor system, these should
       not be insanely expensive objects.
 + __User Friendly / Meaningful__ - The address is a very user-facing aspect of the framework.  As
@@ -43,7 +43,7 @@ communication.
 + Actors are created with a name given by the user
 + Uniqueness is guaranteed by appending a number to the end of the given name (e.g. `-0`, `-1`, etc.)
 
-The API from the user would look like:
+The API could look like:
 
 ```rust
 impl Actor for Ping {
@@ -78,14 +78,14 @@ println!("{:?} -> {:?}", addr.parent, addr);
 ```
 
 Finding the hierarchy of parents could be done by repeatedly calling `.parent` until either the root
-Actor is required or until `.parent` returned some form of "empty" value.
+actor is found or until `.parent` returned some form of "empty" value.
 
 
 ### Hierarchic Naming
 
 Building on __Flat Naming__, the hierarchy could be encoded in the address directly using a path
-structure (similar to navigating a file-system or traditional web-server). Construction would look
-the same, except the internal representation would be different:
+structure (similar to navigating a file-system or traditional web-server). Given the same example
+from before, we could have:
 
 ```rust
 impl Actor for Ping {
