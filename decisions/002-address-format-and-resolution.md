@@ -147,15 +147,48 @@ The only requirement for this approach is that addresses must be registered upon
 Actors may move between executors and will not require any updates to the registry.
 
 If actor creation is a centralized operation (in which the management thread is responsible for
-scheduling the actor to an executor), then the registry can be updated at the same time.
+scheduling the actor to an executor), then the registry can be updated at the same time. Actor
+creation is _currently_ a centralized operation at time of writing.
 
-Actor creation is _currently_ a centralized operation at time of writing.
+The main drawback of this approach is the cost of coordinating across multiple executors (which
+likely means threads). This limitation could be mitigated through a few different approaches:
+  + Having a secondary "cache" registry local to the executorso
+  + Optimistically providing resolution in select circumstances where the data may already
+    be available (e.g. Parent -> Child, Child -> Parent)
 
 ### Path Based Identification
 
-### Path Based Idetentification with Executors
+Take advantage of the fact that actors are created by other actors. Thus, the parent should have
+an easy time getting access to the fully resolved address of the child. Even if the implementation
+uses a centralized creation mechanism, it should be easy (and generally expected/advantageous) for
+the parent to have a resolved address to the child.
+
+In a path-based representation, it's possible to traverse the hierarchy of actors, starting at the
+root actor.
+
+This has some advantages such as not requiring a centralized registry, but also does not make any
+assumptions about how an actor is scheduled (initially or later). However, some significant
+drawbacks exist:
+  + Resolution becomes an inherently asynchronous operation (as all actor communication is).
+  + The cost of performing a resolution is relative to an actors position in the tree.
+
+### Executor Based Identification
 
 If the address format includes identifying information about the executor, then the resolution
-can skip the global registry and perform a lookup directly with the executor.
+can skip the global registry and perform a lookup directly with the executor. This combines the
+lookup from the global registry approach with (some of )the decentralized nature of the
+path-based approach.
+
+The registry is fragmented across the set of available executors and thus removes some of the
+coordination cost of a global registry. However, the executor registry requires updating both
+on initial actor creation, as well as when an actor is moved between executors. Since the executor
+is encoded into the address representation, this would also require _forwarding_ resolution
+to another executor when a move has occurred.
 
 ## Choice
+
+__Hierarchic Naming with Global Registry Lookup__.
+
+Hierarchic naming best suits the constraints while providing the best UX. The global registry
+provides an extremely simple mechanism for resolving addresses with clear paths for future
+optimizations (if necessary).
