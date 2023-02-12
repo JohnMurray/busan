@@ -34,7 +34,7 @@ communication.
   that addresses are discovered through direct address sharing.
 
 
-## Options
+## Format Options
 
 ### Flat Naming
 
@@ -77,13 +77,85 @@ println!("{:?} -> {:?}", addr.parent, addr);
 // local:/ping-3 -> local:/pong
 ```
 
-Finding the heirarchy of parents could be done by repeatedly calling `.parent` until either the root
+Finding the hierarchy of parents could be done by repeatedly calling `.parent` until either the root
 Actor is required or until `.parent` returned some form of "empty" value.
 
 
 ### Hierarchic Naming
 
-## Choice
+Building on __Flat Naming__, the hierarchy could be encoded in the address directly using a path
+structure (similar to navigating a file-system or traditional web-server). Construction would look
+the same, except the internal representation would be different:
 
-Detail which of the previous options were chosen. Now it's time to argue based on the pros and cons
-and the given context why this was the best choice to be made.
+```rust
+impl Actor for Ping {
+    fn before_start(&mut self, ctx: Context) {
+        let addr = ctx.spawn_child::<_, Pong>("pong".to_string(), &());
+        let addr2 = ctx.spawn_child::<_, Pong>("pong".to_string(), &());
+
+        debug!("{:?}", addr);
+        // local:/root/ping-2/pong
+
+        debug!("{:?}", addr2);
+        // local:/root/ping-2/pong-1
+    }
+}
+```
+
+The parent is now encoded in the path, so a separate reference does not need to be tracked
+in the address object. Instead, the address to the parent can be computed on the fly. Something
+like the following would be possible:
+
+```rust
+def parent(&self) -> Address {
+    let mut path = self.path.clone();
+    path.pop();
+    Address::new(path)
+}
+```
+
+### Hashed Naming
+
+Using some form of hashing to create unique actor names doesn't satisfy the constraints that
+addresses are user-friendly and meaningful and doesn't have any other advantages over flat
+naming.
+
+### Executor Based Pathing
+
+Make use of either flat or hierarchical naming, but include path information that identifies
+the actor's physical location within the actor system (such as an "executor ID").
+
+This violates the constraint of not preventing future optimizations (e.g. actor re-balancing).
+However, this does have friendlier resolution mechanics as is discussed in the resolution options.
+
+## Resolution Options
+
+An actor address can be thought of in two parts, there is the representation of the address, such
+as the URI `local:/root/ping-2/pong-1` and then there are the mechanisms of how messages are
+transmitted to the actor. In the current implementation (at time of writing), this is represented
+by a `crossbeam_channel` `Sender` and `Receiver` pair.  __Resolution__ then can be defined as
+converting the representation of the address into the `crossbeam_channel::Sender`.
+
+### Global Registry Lookup
+
+This is the most straight-forward approach to address resolution and can be separated from the
+chosen address format/representation. A global registry is maintained by the actor system in a
+centralized component (such as the management thread) and requests can be made (synchronous or
+asynchronous) to the registry to resolve an address.
+
+The only requirement for this approach is that addresses must be registered upon actor creation.
+Actors may move between executors and will not require any updates to the registry.
+
+If actor creation is a centralized operation (in which the management thread is responsible for
+scheduling the actor to an executor), then the registry can be updated at the same time.
+
+Actor creation is _currently_ a centralized operation at time of writing.
+
+### Path Based Identification
+
+### Path Based Idetentification with Executors
+
+If the address format includes identifying information about the executor, then the resolution
+can skip the global registry and perform a lookup directly with the executor.
+
+## Choice
