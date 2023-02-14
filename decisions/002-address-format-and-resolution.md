@@ -193,7 +193,8 @@ The registry is fragmented across the set of available executors and thus remove
 coordination cost of a global registry. However, the executor registry requires updating both
 on initial actor creation, as well as when an actor is moved between executors. Since the executor
 is encoded into the address representation, this would also require _forwarding_ resolution
-to another executor when a move has occurred.
+to another executor when a move has occurred. Depending on how often actors are moved, this
+could result in significant amounts of bookkeeping over the life of the actor system.
 
 ## Choice
 
