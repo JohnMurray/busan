@@ -11,14 +11,19 @@
     "words": [
         "datacenter",
         "journaling",
+        "proxying",
         "relatedly",
         "roadmap"
     ],
     "userWords": [
         "busan",
+        "cpus",
         "impl", // implementation shorthand
         "impls", // implementation shorthand (plural)
+        "prost",
+        "proto",
         "protobuf",
+        "protos",
         "snapshotting",
         "struct"
     ],
