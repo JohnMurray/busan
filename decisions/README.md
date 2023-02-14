@@ -36,10 +36,15 @@ __<DATE>__
 
 Overview of the problem that we're trying to solve or some context/background information
 
+## Constraints
+
++ Bulleted list of constraints
++ Should add clarity to chosen option
+
 ## Options
 
 List the options that are available. This section may also list some of the pros and cons (in an
-objective fasion)
+objective fashion)
 
 ## Choice
 
