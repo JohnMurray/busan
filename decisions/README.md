@@ -20,6 +20,9 @@ alternative is still possible, it's not really worth a log entry for.
 
   + [000 Busan - Why write a new framework?](https://github.com/JohnMurray/busan/blob/main/decisions/000-busan.md)
   + [001 Actor Message Format](https://github.com/JohnMurray/busan/blob/main/decisions/001-message-format.md)
+  + [003 Address Format & Resolution][003]
+
+  [003]: https://github.com/JohnMurray/busan/blob/main/decisions/003-address-format-and-resolution.md
 
 
 ## Template (for my own copy/pasta)
