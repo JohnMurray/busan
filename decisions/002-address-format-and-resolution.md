@@ -17,7 +17,7 @@ communication.
   be spawned by other actors, creating a parent/children relationships. While this relationship does
   not _have_ to be encoded in the address format, the address should not _prevent_ the encoding of
   this information somewhere (even if private).
-+ __Optimization Friendly__ - Addressing (and address resolution) should not be too perscriptive
++e __Optimization Friendly__ - Addressing (and address resolution) should not be too prescriptive
   in how the underlying system works. The solution does not need to be performant today, but it
   shouldn't make internal changes more difficult later.
     + Example: Using the ID of the executor in the address would prevent us from moving actors
@@ -29,7 +29,7 @@ communication.
   For example, if the address is simply a hash (e.g. SAH256), that is not a meaningful value for
   users if they were to print out the address or inspect it during debugging.
 + __Uniqueness__ - Names must be unique for the lifetime of the actor system. This means if an actor
-  is spanwed with a given name of `"A"` and that actor terminates. Another actor with the given name
+  is spawned with a given name of `"A"` and that actor terminates. Another actor with the given name
   `"A"` must not have the same address. This prevents accidental communication lines and encourages
   that addresses are discovered through direct address sharing.
 
@@ -127,7 +127,7 @@ Using some form of hashing to create unique actor names doesn't satisfy the cons
 addresses are user-friendly and meaningful and doesn't have any other advantages over flat
 naming.
 
-### Executor Based Pathing
+### Executor Based Paths
 
 Make use of either flat or hierarchical naming, but include path information that identifies
 the actor's physical location within the actor system (such as an "executor ID").

@@ -5,13 +5,13 @@ __2022-12-26__
 
 The actor model is a semi well-known model for concurrency that remains rather niche in
 implementation. Usage of the model seems to center around languages or comprehensive
-frameworks (e.g. Erlang/Elixer & Akka). However these langauges, frameworks, and
+frameworks (e.g. Erlang/Elixer & Akka). However these languages, frameworks, and
 communities exist because the Actor Model remains a useful abstraction for certain
 classes of problems and modeling of distributed systems. That being said, Rust doesn't
 have a mature or complete actor model for use. Although some options do exist that
 are worth enumerating:
 
-  + Actix - only actively maintined library
+  + Actix - only actively maintained library
   + Acteur
   + Axiom
   + Riker
@@ -20,7 +20,7 @@ are worth enumerating:
 The only one actively maintained today is Actix and a stroll though the GitHub would
 seem to indicate it is only in maintenance mode to support the web-framework. All
 of the frameworks are fairly minimal and would require significant development and
-investment to get to the level of Erlang/Elixer (especially with OTP) or Akka.
+investment to get to the level of Erlang/Elixir (especially with OTP) or Akka.
 
 A developer writing Rust wishing to build a system with similar quality and features
 to a system built on Akka or OTP must either implement a significant amount of 
@@ -40,7 +40,7 @@ lot of great information out there.
 
 ### Do nothing
 
-Doing nothing is always a valid option. Actor implementations have alwayse existed
+Doing nothing is always a valid option. Actor implementations have always existed
 in niche corners of the programming community and perhaps modern developers don't
 need these tools (or don't need them often enough to invest in a Rust implementation).
 While there are a _lot_ of enthusiastic _starts_ to creating Actor frameworks on
@@ -56,7 +56,7 @@ gets better when folks come together to build cool stuff. This is a good choice,
 reasonable choice, a sane choice.
 
 Even though Actix does not have all the facilities of what I would consider a _mature_
-actor implementaiton, it _does_ have the basics and a decent community surrounding the
+actor implementation, it _does_ have the basics and a decent community surrounding the
 project. This _could_ allow for a focus on only the "interesting bits" given the
 foundation that already exists. This could be true leverage for getting the Rust
 community to a mature actor framework quickly.
