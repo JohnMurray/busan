@@ -80,6 +80,9 @@ println!("{:?} -> {:?}", addr.parent, addr);
 Finding the hierarchy of parents could be done by repeatedly calling `.parent` until either the root
 actor is found or until `.parent` returned some form of "empty" value.
 
+A disadvantage of a flat naming scheme is that collisions are more likely to occur and ensuring the
+uniqueness of actor names requires some sort of global awareness or some manner of partition
+setup/trickery.
 
 ### Hierarchic Naming
 
@@ -113,6 +116,10 @@ def parent(&self) -> Address {
     Address::new(path)
 }
 ```
+
+The drawback of high name collisions in the flat model is addressed by encoding the full path,
+meaning that uniqueness is a problem contained to the creating actor and only requires local
+information.
 
 ### Hashed Naming
 
