@@ -84,3 +84,18 @@ jobs:
         with:
           command: clippy
           args: -- -W warnings
+
+  spell_check:
+    name: Spell Check (Markdown)
+    runs-on: ubuntu-latest
+    needs: [check]
+    steps:
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install CSpell
+        run: npm install -g cspell
+      - uses: actions/checkout@v3
+      - name: CSpell
+        run: cspell --config .github/workflows/cspell.json "**/*.md"
