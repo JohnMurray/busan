@@ -1,7 +1,5 @@
 # busan
 
-blippityboop
-
 [![Crates.io][crates-badge]][crates-url]
 [![Build Status][actions-badge]][actions-url]
 [![GNU GPL v3 licensed][gpl-badge]][gpl-url]
