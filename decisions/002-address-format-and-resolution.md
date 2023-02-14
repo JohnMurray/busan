@@ -159,7 +159,7 @@ creation is _currently_ a centralized operation at time of writing.
 
 The main drawback of this approach is the cost of coordinating across multiple executors (which
 likely means threads). This limitation could be mitigated through a few different approaches:
-  + Having a secondary "cache" registry local to the executorso
+  + Having a secondary "cache" registry local to the executor
   + Optimistically providing resolution in select circumstances where the data may already
     be available (e.g. Parent -> Child, Child -> Parent)
 
@@ -171,13 +171,16 @@ uses a centralized creation mechanism, it should be easy (and generally expected
 the parent to have a resolved address to the child.
 
 In a path-based representation, it's possible to traverse the hierarchy of actors, starting at the
-root actor.
+current actor, working up to the root actor, and finally back down to the actor being resolved.
+This traversal can be coordinated by the actor attempting the resolution, requesting the address
+for each node by asking the previous node.
 
 This has some advantages such as not requiring a centralized registry, but also does not make any
 assumptions about how an actor is scheduled (initially or later). However, some significant
 drawbacks exist:
   + Resolution becomes an inherently asynchronous operation (as all actor communication is).
-  + The cost of performing a resolution is relative to an actors position in the tree.
+  + The cost of performing a resolution is relative to an actors position in the tree (both the
+    position of the actor being resolved _and_ the position of the actor performing the resolution).
 
 ### Executor Based Identification
 
