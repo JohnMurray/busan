@@ -81,6 +81,7 @@ impl Executor for ThreadExecutor {
                         cell.actor.before_start(Context {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
+                            child_count: &mut cell.child_count,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }

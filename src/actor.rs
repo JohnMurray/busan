@@ -1,6 +1,7 @@
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::{Receiver, Sender};
 use std::cell::RefCell;
+use std::fmt::{Display, Formatter};
 
 /// place-holder trait for an actor, this might change at some point
 pub trait Actor: Send {
@@ -30,6 +31,10 @@ pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
     pub(crate) mailbox: Receiver<Box<dyn prost::Message>>,
     pub(crate) address: ActorAddress,
+
+    // Count of children that the actor has spawned. This is used to ensure that the actor names
+    // are unique, with the value being appended to each child name and incremented on each use.
+    pub(crate) child_count: usize,
 }
 
 impl ActorCell {
@@ -42,30 +47,55 @@ impl ActorCell {
             actor,
             mailbox,
             address,
+            child_count: 0,
         }
     }
 }
 
 /// Actor context object used for performing actions that interact with the running
 /// actor-system, such as spawning new actors.
-pub struct Context<'a, 'b> {
+pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
-    pub(crate) runtime_manager: &'b RuntimeManagerRef,
+    pub(crate) runtime_manager: &'a RuntimeManagerRef,
+    pub(crate) child_count: &'a mut usize,
 }
 
-impl Context<'_, '_> {
+impl Context<'_> {
     /// Create a new (child) actor. Note that this may be a delayed action and the actor
     /// may not be created immediately.
     /// TODO: Ensure that actor names are unique
     pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
-        &self,
+        &mut self,
         name: String,
         init_msg: &B,
     ) -> ActorAddress {
-        let address = ActorAddress::new_child(self.address, &name);
+        let address = ActorAddress::new_child(self.address, &name, *self.child_count);
+        *(self.child_count) += 1;
         self.runtime_manager
             .assign_actor(Box::new(A::init(init_msg)), address.clone());
         address
+    }
+
+    pub fn send_message(&self, addr: &ActorAddress, message: Box<dyn prost::Message>) {
+        // Validate that the address is resolved (this is a blocking call to the runtime
+        // manager if unresolved).
+        if !addr.is_resolved() {
+            match self.runtime_manager.resolve_address(addr) {
+                Some(resolved) => {
+                    addr.set_mailbox(resolved);
+                }
+                _ => {
+                    todo!("Send message to dead letter queue");
+                }
+            }
+        }
+
+        // We should _either_ have a resolved address _OR_ the message should have been
+        // forwarded to the dead letter queue.
+        debug_assert!(addr.is_resolved(), "Address {} is not resolved", addr);
+
+        // Send the message to the resolved address
+        addr.send(message);
     }
 }
 
@@ -79,6 +109,12 @@ pub struct ActorAddress {
     pub(crate) mailbox: RefCell<Option<Sender<Box<dyn prost::Message>>>>,
 }
 
+impl Display for ActorAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.uri)
+    }
+}
+
 impl Clone for ActorAddress {
     fn clone(&self) -> Self {
         Self {
@@ -89,8 +125,8 @@ impl Clone for ActorAddress {
 }
 
 impl ActorAddress {
-    pub(crate) fn new_child(parent: &ActorAddress, name: &String) -> Self {
-        let uri = format!("{}/{}", parent.uri, name);
+    pub(crate) fn new_child(parent: &ActorAddress, name: &String, id: usize) -> Self {
+        let uri = format!("{}/{}-{}", parent.uri, name, id);
         Self {
             uri,
             mailbox: RefCell::new(None),
@@ -107,5 +143,17 @@ impl ActorAddress {
 
     pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn prost::Message>>) {
         *self.mailbox.borrow_mut() = Some(mailbox);
+    }
+
+    pub(crate) fn is_resolved(&self) -> bool {
+        self.mailbox.borrow().is_some()
+    }
+
+    pub(crate) fn send(&self, message: Box<dyn prost::Message>) {
+        let result = (&self.mailbox.borrow().as_ref().unwrap()).send(message);
+        // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
+        //       redirect to the dead letter queue. This function may simply return an error
+        //       so that the caller can do the redirection.
+        debug_assert!(result.is_ok(), "Error sending to actor address {}", self);
     }
 }
