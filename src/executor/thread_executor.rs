@@ -81,6 +81,7 @@ impl Executor for ThreadExecutor {
                         cell.actor.before_start(Context {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
+                            child_count: &mut cell.child_count,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
@@ -89,7 +90,25 @@ impl Executor for ThreadExecutor {
                         break;
                     }
                 }
-                // TODO: process messages
+                // Iterate over the actor-cells and check if there are any non-empty mailboxes.
+                // If one is found, process a message from it.
+                for (_, cell) in self.actor_cells.iter_mut() {
+                    if !cell.mailbox.is_empty() {
+                        let result = cell.mailbox.try_recv();
+                        if result.is_ok() {
+                            let msg = result.unwrap();
+                            trace!("processing message {:?} for actor {}", &msg, &cell.address);
+                            cell.actor.receive(
+                                Context {
+                                    address: &cell.address,
+                                    runtime_manager: &self.runtime_manager,
+                                    child_count: &mut cell.child_count,
+                                },
+                                msg,
+                            );
+                        }
+                    }
+                }
             }
             trace!("nothing to do, sleeping...");
             thread::sleep(Duration::from_millis(SLEEP_DURATION_MS));

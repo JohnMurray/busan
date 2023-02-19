@@ -39,4 +39,8 @@ impl Actor for Greet {
     fn before_start(&mut self, _ctx: busan::actor::Context) {
         println!("{}", self.greeting);
     }
+
+    fn receive(&mut self, _ctx: busan::actor::Context, _msg: Box<dyn prost::Message>) {
+        println!("received message");
+    }
 }

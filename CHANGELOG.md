@@ -5,6 +5,7 @@
   + Added configuration support for creating new ActorSystem
   + Implemented `ActorCell`
   + Implemented `ActorAddress` (for local routing only) and address resolution
+  + Basic message sending
 
 ## 0.1.1
 
