@@ -6,6 +6,8 @@ use std::fmt::{Display, Formatter};
 /// place-holder trait for an actor, this might change at some point
 pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
+
+    fn receive(&mut self, ctx: Context, msg: Box<dyn prost::Message>);
 }
 
 /// ActorInit defines a method of construction for an actor that takes an initialization

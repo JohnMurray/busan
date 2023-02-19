@@ -1,0 +1,10 @@
+syntax = "proto3";
+package ping_pong;
+
+message ping {
+  string message = 1;
+}
+
+message pong {
+  string message = 1;
+}
