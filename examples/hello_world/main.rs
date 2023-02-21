@@ -2,11 +2,23 @@ extern crate busan;
 
 use busan::actor::{Actor, ActorInit};
 use busan::config::ActorSystemConfig;
+use busan::message::ToMessage;
 use busan::system::ActorSystem;
 use std::thread;
 
 pub mod hello_world {
     include!(concat!(env!("OUT_DIR"), "/hello_world.rs"));
+}
+
+struct BoopTest {}
+
+impl ToMessage for BoopTest {
+    fn to_message(&self) -> Box<dyn prost::Message> {
+        let init = hello_world::actor::Init {
+            greeting: "Hi there!".to_string(),
+        };
+        Box::new(init)
+    }
 }
 
 fn main() {

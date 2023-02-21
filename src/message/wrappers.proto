@@ -1,0 +1,34 @@
+syntax = "proto3";
+package message.common_types;
+
+message i32_wrapper {
+  int32 value = 1;
+}
+
+message i64_wrapper {
+  int64 value = 1;
+}
+
+message u32_wrapper {
+  uint32 value = 1;
+}
+
+message u64_wrapper {
+  uint64 value = 1;
+}
+
+message string_wrapper {
+  string value = 1;
+}
+
+message bool_wrapper {
+  bool value = 1;
+}
+
+message float_wrapper {
+  float value = 1;
+}
+
+message double_wrapper {
+  double value = 1;
+}
