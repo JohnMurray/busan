@@ -1,6 +1,5 @@
 use crate::message;
 use crate::message::ToMessage;
-use prost::Message;
 
 pub mod common_types {
     include!(concat!(env!("OUT_DIR"), "/message.common_types.rs"));
@@ -9,15 +8,17 @@ use common_types::*;
 
 macro_rules! impl_to_message_for_primitive {
     ($t:ty, $wrapper:ident) => {
-        impl_to_message_for_primitive!($t, $wrapper, (*self), String);
+        impl_to_message_for_primitive!($t, $wrapper, |x| x);
     };
     ($t:ty, $wrapper:ident, $converter:expr) => {
-        impl_to_message_for_primitive!($t, $wrapper, $converter(*self), String);
+        impl_to_message_for_primitive!($t, $wrapper, $converter, *);
     };
-    ($t:ty, $wrapper:ident, $conversion:tt, $noop_:tt) => {
+    ($t:ty, $wrapper:ident, $converter:expr, $deref:tt) => {
         impl ToMessage for $t {
             fn to_message(&self) -> Box<dyn prost::Message> {
-                Box::new($wrapper { value: $conversion })
+                Box::new($wrapper {
+                    value: $converter($deref self),
+                })
             }
             fn is_primitive<L: message::private::IsLocal>(&self) -> bool {
                 return true;
@@ -26,8 +27,16 @@ macro_rules! impl_to_message_for_primitive {
     };
 }
 
-// TODO: This doesn't work. I want to define a simple macro for implementing all of these
-//       ToMessage impls. But the proto types don't line up exactly. So sometimes these impls
-//       need to have a conversion function. Sometimes they fit and don't. So I just need to
-//       get this macro to work with or without the conversion function.
 impl_to_message_for_primitive!(u8, U32Wrapper, u32::from);
+impl_to_message_for_primitive!(u16, U32Wrapper, u32::from);
+impl_to_message_for_primitive!(u32, U32Wrapper);
+impl_to_message_for_primitive!(u64, U64Wrapper);
+impl_to_message_for_primitive!(i8, I32Wrapper, i32::from);
+impl_to_message_for_primitive!(i16, I32Wrapper, i32::from);
+impl_to_message_for_primitive!(i32, I32Wrapper);
+impl_to_message_for_primitive!(i64, I64Wrapper);
+impl_to_message_for_primitive!(f32, FloatWrapper);
+impl_to_message_for_primitive!(f64, DoubleWrapper);
+impl_to_message_for_primitive!(bool, BoolWrapper);
+impl_to_message_for_primitive!(String, StringWrapper, |x: &String| x.clone(), &);
+impl_to_message_for_primitive!(str, StringWrapper, |x: &str| x.to_string(), &);
