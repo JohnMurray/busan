@@ -49,7 +49,3 @@ impl_to_message_for_primitive!(&bool, BoolWrapper, |x| x, *);
 impl_to_message_for_primitive!(String, StringWrapper);
 impl_to_message_for_primitive!(&String, StringWrapper, |x: &String| x.clone());
 impl_to_message_for_primitive!(&str, StringWrapper, |x: &str| x.to_string());
-
-// TODO: Vec<T> where T: ToMessage, Tuples
-// TODO: Are there any common enum types that we would want to support?
-// TODO: What is the API for sending messages

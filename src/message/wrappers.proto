@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 package message.common_types;
 
 message i32_wrapper {
