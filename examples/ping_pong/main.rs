@@ -2,7 +2,6 @@ extern crate busan;
 
 use busan::actor::{Actor, ActorAddress, ActorInit, Context};
 use busan::config::ActorSystemConfig;
-use busan::message::common_types::*;
 use busan::message::ToMessage;
 use busan::system::ActorSystem;
 use std::thread;
