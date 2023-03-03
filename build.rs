@@ -4,7 +4,6 @@ fn main() -> Result<()> {
     prost_build::compile_protos(
         &[
             "examples/hello_world/hello_world.proto",
-            "examples/ping_pong/ping_pong.proto",
             "src/message/wrappers.proto",
         ],
         &["examples/hello_world/", "examples/ping_pong/", "src/"],
