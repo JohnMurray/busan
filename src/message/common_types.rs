@@ -46,3 +46,59 @@ impl_to_message_for_primitive!(&bool, BoolWrapper, |x| x, *);
 impl_to_message_for_primitive!(String, StringWrapper);
 impl_to_message_for_primitive!(&String, StringWrapper, |x: &String| x.clone());
 impl_to_message_for_primitive!(&str, StringWrapper, |x: &str| x.to_string());
+
+macro_rules! impl_to_message_for_primitive_list {
+    // Owned types that don't need conversion
+    ($t:ty, $wrapper:ident) => {
+        impl ToMessage for Vec<$t> {
+            fn to_message(self) -> Box<dyn prost::Message> {
+                Box::new($wrapper { values: self })
+            }
+        }
+    };
+    // Owned types that need conversion
+    ($t:ty, $wrapper:ident, $converter:expr) => {
+        impl ToMessage for Vec<$t> {
+            fn to_message(self) -> Box<dyn prost::Message> {
+                Box::new($wrapper {
+                    values: self.iter().map(|x| $converter(*x)).collect(),
+                })
+            }
+        }
+    };
+    // Borrowed types that don't need conversion
+    (&$t:ty, $wrapper:ident, clone) => {
+        impl ToMessage for Vec<$t> {
+            fn to_message(self) -> Box<dyn prost::Message> {
+                Box::new($wrapper {
+                    values: self.clone(),
+                })
+            }
+        }
+    };
+    // Borrowed types that need conversion
+    (&$t:ty, $wrapper:ident, $converter:expr) => {
+        impl ToMessage for Vec<$t> {
+            fn to_message(self) -> Box<dyn prost::Message> {
+                Box::new($wrapper {
+                    values: self.iter().map(|x| $converter(x)).collect(),
+                })
+            }
+        }
+    };
+}
+
+impl_to_message_for_primitive_list!(u8, U32ListWrapper, u32::from);
+impl_to_message_for_primitive_list!(u16, U32ListWrapper, u32::from);
+impl_to_message_for_primitive_list!(u32, U32ListWrapper);
+impl_to_message_for_primitive_list!(u64, U64ListWrapper);
+impl_to_message_for_primitive_list!(i8, I32ListWrapper, i32::from);
+impl_to_message_for_primitive_list!(i16, I32ListWrapper, i32::from);
+impl_to_message_for_primitive_list!(i32, I32ListWrapper);
+impl_to_message_for_primitive_list!(i64, I64ListWrapper);
+impl_to_message_for_primitive_list!(f32, FloatListWrapper);
+impl_to_message_for_primitive_list!(f64, DoubleListWrapper);
+impl_to_message_for_primitive_list!(bool, BoolListWrapper);
+impl_to_message_for_primitive_list!(String, StringListWrapper);
+impl_to_message_for_primitive_list!(&String, StringListWrapper, |x: &String| x.clone());
+impl_to_message_for_primitive_list!(&str, StringListWrapper, |x: &str| x.to_string());
