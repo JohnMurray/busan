@@ -1,10 +1,7 @@
 use crate::message;
 use crate::message::ToMessage;
 
-pub mod common_types {
-    include!(concat!(env!("OUT_DIR"), "/message.common_types.rs"));
-}
-use common_types::*;
+include!(concat!(env!("OUT_DIR"), "/message.common_types.rs"));
 
 macro_rules! impl_to_message_for_primitive {
     ($t:ty, $wrapper:ident) => {
