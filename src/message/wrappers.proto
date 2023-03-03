@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package message.common_types;
+
+message i32_wrapper {
+  int32 value = 1;
+}
+
+message i32_list_wrapper {
+  repeated int32 values = 1;
+}
+
+message i64_wrapper {
+  int64 value = 1;
+}
+
+message i64_list_wrapper {
+  repeated int64 values = 1;
+}
+
+message u32_wrapper {
+  uint32 value = 1;
+}
+
+message u32_list_wrapper {
+  repeated uint32 values = 1;
+}
+
+message u64_wrapper {
+  uint64 value = 1;
+}
+
+message u64_list_wrapper {
+  repeated uint64 values = 1;
+}
+
+message string_wrapper {
+  string value = 1;
+}
+
+message string_list_wrapper {
+  repeated string values = 1;
+}
+
+message bool_wrapper {
+  bool value = 1;
+}
+
+message bool_list_wrapper {
+  repeated bool values = 1;
+}
+
+message float_wrapper {
+  float value = 1;
+}
+
+message float_list_wrapper {
+  repeated float values = 1;
+}
+
+message double_wrapper {
+  double value = 1;
+}
+
+message double_list_wrapper {
+  repeated double values = 1;
+}

@@ -2,12 +2,9 @@ extern crate busan;
 
 use busan::actor::{Actor, ActorAddress, ActorInit, Context};
 use busan::config::ActorSystemConfig;
+use busan::message::ToMessage;
 use busan::system::ActorSystem;
 use std::thread;
-
-pub mod proto {
-    include!(concat!(env!("OUT_DIR"), "/ping_pong.rs"));
-}
 
 struct Ping {
     pong_addr: Option<ActorAddress>,
@@ -43,24 +40,14 @@ impl ActorInit for Pong {
 impl Actor for Ping {
     fn before_start(&mut self, mut ctx: Context) {
         self.pong_addr = Some(ctx.spawn_child::<_, Pong>("pong".to_string(), &()));
-        ctx.send_message(
-            &self.pong_addr.as_ref().unwrap(),
-            Box::new(proto::Ping {
-                message: "ping".to_string(),
-            }),
-        );
+        ctx.send_message(&self.pong_addr.as_ref().unwrap(), "ping".to_message());
     }
 
     fn receive(&mut self, ctx: Context, _msg: Box<dyn prost::Message>) {
         println!("received message");
         // assume it was a pong, send a ping
         match &self.pong_addr {
-            Some(addr) => ctx.send_message(
-                &addr,
-                Box::new(proto::Ping {
-                    message: "ping".to_string(),
-                }),
-            ),
+            Some(addr) => ctx.send_message(&addr, "ping".to_message()),
             None => {}
         }
     }
@@ -70,12 +57,7 @@ impl Actor for Pong {
         println!("received message");
         // assume it was a ping, send a pong
         match &self.ping_addr {
-            Some(addr) => ctx.send_message(
-                &addr,
-                Box::new(proto::Ping {
-                    message: "ping".to_string(),
-                }),
-            ),
+            Some(addr) => ctx.send_message(&addr, "pong".to_message()),
             None => {}
         }
     }
