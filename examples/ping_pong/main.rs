@@ -4,6 +4,7 @@ use busan::actor::{Actor, ActorAddress, ActorInit, Context};
 use busan::config::ActorSystemConfig;
 use busan::message::ToMessage;
 use busan::system::ActorSystem;
+use std::any::Any;
 use std::thread;
 
 struct Ping {
@@ -53,13 +54,22 @@ impl Actor for Ping {
     }
 }
 impl Actor for Pong {
-    fn receive(&mut self, ctx: Context, _msg: Box<dyn prost::Message>) {
+    fn receive(&mut self, ctx: Context, msg: Box<dyn prost::Message>) {
         println!("received message");
+
         // assume it was a ping, send a pong
         match &self.ping_addr {
             Some(addr) => ctx.send_message(&addr, "pong".to_message()),
             None => {}
         }
+    }
+}
+
+impl Pong {
+    fn receive2(&mut self, msg: Box<dyn prost::Message + 'static>) {
+        // Convert msg from Box<dyn prost::Message> to Box<Any>
+        // let any_msg: Box<dyn Any> = msg.downcast::<Box<dyn Any>>().unwrap();
+        let any_msg: Box<dyn Any> = msg.downcast::<Box<dyn Any>>().unwrap();
     }
 }
 
