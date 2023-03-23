@@ -1,5 +1,3 @@
-extern crate busan;
-
 use busan::actor::{Actor, ActorInit};
 use busan::config::ActorSystemConfig;
 use busan::message::common_types::StringWrapper;
@@ -7,13 +5,14 @@ use busan::message::Message;
 use busan::system::ActorSystem;
 use std::thread;
 
-pub mod hello_world {
+mod hello_world {
     include!(concat!(env!("OUT_DIR"), "/hello_world.rs"));
 }
+use hello_world::*;
 
 fn main() {
     let mut system = ActorSystem::init(ActorSystemConfig::default());
-    let init = hello_world::actor::Init {
+    let init = Init {
         greeting: "Hi there!".to_string(),
     };
     system.spawn_root_actor::<_, Greet>("greeter".to_string(), &init);
@@ -26,14 +25,14 @@ struct Greet {
     greeting: String,
 }
 
-impl Message for hello_world::actor::Init {
+impl Message for Init {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
 }
 
 impl ActorInit for Greet {
-    type Init = hello_world::actor::Init;
+    type Init = Init;
 
     fn init(init_msg: &Self::Init) -> Self {
         println!("spawning greet actor");
