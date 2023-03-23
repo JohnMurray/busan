@@ -16,6 +16,8 @@ autoexamples = false
 
 [workspace]
 members = [
+    "busan-derive",
+
     "examples/hello_world",
     "examples/ping_pong",
 ]

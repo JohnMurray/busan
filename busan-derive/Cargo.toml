@@ -1,0 +1,16 @@
+[package]
+name = "busan-derive"
+version = "0.1.0"
+edition = "2021"
+authors = ["John Murray"]
+license-file = "../LICENSE"
+readme = "README.md"
+homepage = "https://github.com/JohnMurray/busan"
+repository = "https://github.com/JohnMurray/busan"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
