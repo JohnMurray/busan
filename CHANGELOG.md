@@ -6,6 +6,8 @@
   + Implemented `ActorCell`
   + Implemented `ActorAddress` (for local routing only) and address resolution
   + Basic message sending
+  + Pattern matching on received types (by use of `Any`) added. Uses newly
+    added `Message` type (which subsumes `prost::Message`) to implement `as_any()`.
 
 ## 0.1.1
 

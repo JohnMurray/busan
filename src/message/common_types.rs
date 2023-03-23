@@ -1,5 +1,5 @@
 use crate::message;
-use crate::message::ToMessage;
+use crate::message::{Message, ToMessage};
 
 include!(concat!(env!("OUT_DIR"), "/message.common_types.rs"));
 
@@ -9,7 +9,7 @@ macro_rules! impl_to_message_for_primitive {
     };
     ($t:ty, $wrapper:ident, $converter:expr $(, $deref:tt)?) => {
         impl ToMessage for $t {
-            fn to_message(self) -> Box<dyn prost::Message> {
+            fn to_message(self) -> Box<dyn Message> {
                 Box::new($wrapper {
                     value: $converter($($deref)* self),
                 })
@@ -51,7 +51,7 @@ macro_rules! impl_to_message_for_primitive_list {
     // Owned types that don't need conversion
     ($t:ty, $wrapper:ident) => {
         impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn prost::Message> {
+            fn to_message(self) -> Box<dyn Message> {
                 Box::new($wrapper { values: self })
             }
         }
@@ -59,7 +59,7 @@ macro_rules! impl_to_message_for_primitive_list {
     // Owned types that need conversion
     ($t:ty, $wrapper:ident, $converter:expr) => {
         impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn prost::Message> {
+            fn to_message(self) -> Box<dyn Message> {
                 Box::new($wrapper {
                     values: self.iter().map(|x| $converter(*x)).collect(),
                 })
@@ -69,7 +69,7 @@ macro_rules! impl_to_message_for_primitive_list {
     // Borrowed types that don't need conversion
     (&$t:ty, $wrapper:ident, clone) => {
         impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn prost::Message> {
+            fn to_message(self) -> Box<dyn Message> {
                 Box::new($wrapper {
                     values: self.clone(),
                 })
@@ -79,7 +79,7 @@ macro_rules! impl_to_message_for_primitive_list {
     // Borrowed types that need conversion
     (&$t:ty, $wrapper:ident, $converter:expr) => {
         impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn prost::Message> {
+            fn to_message(self) -> Box<dyn Message> {
                 Box::new($wrapper {
                     values: self.iter().map(|x| $converter(x)).collect(),
                 })
@@ -102,3 +102,30 @@ impl_to_message_for_primitive_list!(bool, BoolListWrapper);
 impl_to_message_for_primitive_list!(String, StringListWrapper);
 impl_to_message_for_primitive_list!(&String, StringListWrapper, |x: &String| x.clone());
 impl_to_message_for_primitive_list!(&str, StringListWrapper, |x: &str| x.to_string());
+
+macro_rules! impl_busan_message {
+    ($t:ty) => {
+        impl Message for $t {
+            fn as_any(&self) -> &dyn std::any::Any {
+                self
+            }
+        }
+    };
+}
+
+impl_busan_message!(U32Wrapper);
+impl_busan_message!(U64Wrapper);
+impl_busan_message!(I32Wrapper);
+impl_busan_message!(I64Wrapper);
+impl_busan_message!(FloatWrapper);
+impl_busan_message!(DoubleWrapper);
+impl_busan_message!(BoolWrapper);
+impl_busan_message!(StringWrapper);
+impl_busan_message!(U32ListWrapper);
+impl_busan_message!(U64ListWrapper);
+impl_busan_message!(I32ListWrapper);
+impl_busan_message!(I64ListWrapper);
+impl_busan_message!(FloatListWrapper);
+impl_busan_message!(DoubleListWrapper);
+impl_busan_message!(BoolListWrapper);
+impl_busan_message!(StringListWrapper);

@@ -2,6 +2,8 @@ extern crate busan;
 
 use busan::actor::{Actor, ActorInit};
 use busan::config::ActorSystemConfig;
+use busan::message::common_types::StringWrapper;
+use busan::message::Message;
 use busan::system::ActorSystem;
 use std::thread;
 
@@ -24,6 +26,12 @@ struct Greet {
     greeting: String,
 }
 
+impl Message for hello_world::actor::Init {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
 impl ActorInit for Greet {
     type Init = hello_world::actor::Init;
 
@@ -40,7 +48,10 @@ impl Actor for Greet {
         println!("{}", self.greeting);
     }
 
-    fn receive(&mut self, _ctx: busan::actor::Context, _msg: Box<dyn prost::Message>) {
-        println!("received message");
+    fn receive(&mut self, _ctx: busan::actor::Context, _msg: Box<dyn Message>) {
+        match _msg.as_any().downcast_ref::<StringWrapper>() {
+            Some(msg) => println!("received message: {}", msg.value),
+            None => {}
+        }
     }
 }

@@ -1,3 +1,4 @@
+use crate::message::Message;
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::{Receiver, Sender};
 use std::cell::RefCell;
@@ -7,14 +8,14 @@ use std::fmt::{Display, Formatter};
 pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
 
-    fn receive(&mut self, ctx: Context, msg: Box<dyn prost::Message>);
+    fn receive(&mut self, ctx: Context, msg: Box<dyn Message>);
 }
 
 /// ActorInit defines a method of construction for an actor that takes an initialization
 /// message. This provides type-safe initialization of an actor while keeping construction
 /// and internal state within the actor system.
 pub trait ActorInit {
-    type Init: prost::Message;
+    type Init: Message;
 
     fn init(init_msg: &Self::Init) -> Self
     where
@@ -22,7 +23,7 @@ pub trait ActorInit {
 }
 
 // NOTE:
-//   - Sending messages should always be a prost::Message
+//   - Sending messages should always be a Message
 //   - Receiving messages could be an Any type which _should_ allow for better pattern matching
 //     against expected types. See:
 //     https://stackoverflow.com/questions/26126683/how-to-match-trait-implementors
@@ -31,7 +32,7 @@ pub trait ActorInit {
 /// and other actor-related information that is useful internally.
 pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
-    pub(crate) mailbox: Receiver<Box<dyn prost::Message>>,
+    pub(crate) mailbox: Receiver<Box<dyn Message>>,
     pub(crate) address: ActorAddress,
 
     // Count of children that the actor has spawned. This is used to ensure that the actor names
@@ -42,7 +43,7 @@ pub struct ActorCell {
 impl ActorCell {
     pub fn new(
         actor: Box<dyn Actor>,
-        mailbox: Receiver<Box<dyn prost::Message>>,
+        mailbox: Receiver<Box<dyn Message>>,
         address: ActorAddress,
     ) -> Self {
         Self {
@@ -78,7 +79,7 @@ impl Context<'_> {
         address
     }
 
-    pub fn send_message(&self, addr: &ActorAddress, message: Box<dyn prost::Message>) {
+    pub fn send_message(&self, addr: &ActorAddress, message: Box<dyn Message>) {
         // Validate that the address is resolved (this is a blocking call to the runtime
         // manager if unresolved).
         if !addr.is_resolved() {
@@ -108,7 +109,7 @@ pub struct ActorAddress {
     /// mailbox is a RefCell containing an optional sender. ActorAddresses may be created from
     /// just a path, but once a message is sent that path will need to resolve to a mailbox. Once
     /// the mailbox is resolved, it can be stored here for future use.
-    pub(crate) mailbox: RefCell<Option<Sender<Box<dyn prost::Message>>>>,
+    pub(crate) mailbox: RefCell<Option<Sender<Box<dyn Message>>>>,
 }
 
 impl Display for ActorAddress {
@@ -143,7 +144,7 @@ impl ActorAddress {
         }
     }
 
-    pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn prost::Message>>) {
+    pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn Message>>) {
         *self.mailbox.borrow_mut() = Some(mailbox);
     }
 
@@ -151,7 +152,7 @@ impl ActorAddress {
         self.mailbox.borrow().is_some()
     }
 
-    pub(crate) fn send(&self, message: Box<dyn prost::Message>) {
+    pub(crate) fn send(&self, message: Box<dyn Message>) {
         let result = (&self.mailbox.borrow().as_ref().unwrap()).send(message);
         // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
         //       redirect to the dead letter queue. This function may simply return an error
