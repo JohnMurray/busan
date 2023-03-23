@@ -1,11 +1,9 @@
-extern crate busan;
-
+#![allow(non_snake_case)]
 use busan::actor::{Actor, ActorAddress, ActorInit, Context};
 use busan::config::ActorSystemConfig;
 use busan::message::common_types::{I32Wrapper, StringWrapper};
 use busan::message::{Message, ToMessage};
 use busan::system::ActorSystem;
-use std::any::Any;
 use std::thread;
 
 struct Ping {

@@ -16,6 +16,8 @@ autoexamples = false
 
 [workspace]
 members = [
+    "busan-derive",
+
     "examples/hello_world",
     "examples/ping_pong",
 ]
@@ -26,6 +28,7 @@ log = "0.4"
 num_cpus = "1.13"
 prost = "0.11"
 prost-types = "0.11"
+busan-derive = { path = "busan-derive" }
 
 [build-dependencies]
 prost-build = "0.11"

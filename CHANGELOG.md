@@ -8,6 +8,8 @@
   + Basic message sending
   + Pattern matching on received types (by use of `Any`) added. Uses newly
     added `Message` type (which subsumes `prost::Message`) to implement `as_any()`.
+  + Added `busan-derive` with support for `#[derive(busan::Message)]` proc-macro
+  + Updated `hello_world` example to use derive macro in `build.rs`
 
 ## 0.1.1
 

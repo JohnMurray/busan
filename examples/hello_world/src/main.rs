@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use busan::actor::{Actor, ActorInit};
 use busan::config::ActorSystemConfig;
 use busan::message::common_types::StringWrapper;
@@ -5,10 +6,10 @@ use busan::message::Message;
 use busan::system::ActorSystem;
 use std::thread;
 
-mod hello_world {
+mod proto {
     include!(concat!(env!("OUT_DIR"), "/hello_world.rs"));
 }
-use hello_world::*;
+use proto::*;
 
 fn main() {
     let mut system = ActorSystem::init(ActorSystemConfig::default());
@@ -23,12 +24,6 @@ fn main() {
 
 struct Greet {
     greeting: String,
-}
-
-impl Message for Init {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
 }
 
 impl ActorInit for Greet {
