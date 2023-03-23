@@ -6,6 +6,7 @@ use std::thread;
 use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit};
 use crate::config;
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorFactory, ExecutorHandle};
+use crate::message::Message;
 use crate::util::CommandChannel;
 
 /// ActorSystem is a user-facing handle/abstraction for the actor system. It exposes an
@@ -109,7 +110,7 @@ impl ActorSystem {
 struct RuntimeManager {
     /// Map of executor names to their command-channel (for sending commands)
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
-    actor_registry: HashMap<String, Sender<Box<dyn prost::Message>>>,
+    actor_registry: HashMap<String, Sender<Box<dyn Message>>>,
 
     manager_command_channel: CommandChannel<ManagerCommands>,
 
@@ -161,7 +162,7 @@ impl RuntimeManager {
                 }
                 Ok(ManagerCommands::AssignActor { actor, address }) => {
                     let executor_name = self.get_next_executor();
-                    let (sender, receiver) = unbounded::<Box<dyn prost::Message>>();
+                    let (sender, receiver) = unbounded::<Box<dyn Message>>();
                     let address_uri = address.uri.clone();
                     address.set_mailbox(sender.clone());
                     let cell = ActorCell::new(actor, receiver, address);
@@ -250,12 +251,9 @@ impl RuntimeManagerRef {
 
     /// Resolve an address to mailbox by looking up the actor in the global registry. Note that this
     /// will block until the management thread has performed the lookup.
-    pub fn resolve_address(
-        &self,
-        address: &ActorAddress,
-    ) -> Option<Sender<Box<dyn prost::Message>>> {
+    pub fn resolve_address(&self, address: &ActorAddress) -> Option<Sender<Box<dyn Message>>> {
         let uri = address.uri.clone();
-        let (sender, receiver) = bounded::<Option<Sender<Box<dyn prost::Message>>>>(1);
+        let (sender, receiver) = bounded::<Option<Sender<Box<dyn Message>>>>(1);
         self.manager_command_channel
             .send(ManagerCommands::ResolveAddress {
                 address_uri: uri,
@@ -290,6 +288,6 @@ enum ManagerCommands {
     /// channel so the sender can block on the result of the lookup if desired.
     ResolveAddress {
         address_uri: String,
-        return_channel: Sender<Option<Sender<Box<dyn prost::Message>>>>,
+        return_channel: Sender<Option<Sender<Box<dyn Message>>>>,
     },
 }

@@ -1,7 +1,11 @@
 pub mod common_types;
 
+pub trait Message: prost::Message {
+    fn as_any(&self) -> &dyn std::any::Any;
+}
+
 pub trait ToMessage {
-    fn to_message(self) -> Box<dyn prost::Message>;
+    fn to_message(self) -> Box<dyn Message>;
 
     fn is_primitive<L: private::IsLocal>(&self) -> bool {
         return false;
