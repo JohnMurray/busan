@@ -55,7 +55,7 @@ Beyond this, I don't have any defined plans. Things on my mind include:
   + Async IO and/or async/await support and/or Tower integration
 
 It's not clear how quickly progress will be made against these milestones and ideas as this is
-also a personal experiment in how I think and manage my open-source projects.
+also a personal experiment in how I think about and manage my open-source projects.
 
   [github_project]: https://github.com/users/JohnMurray/projects/1/views/1
 
