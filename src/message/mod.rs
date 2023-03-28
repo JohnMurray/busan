@@ -2,6 +2,11 @@ pub mod common_types;
 
 pub trait Message: prost::Message {
     fn as_any(&self) -> &dyn std::any::Any;
+
+    #[doc(hidden)]
+    fn encoded_len(&self) -> usize {
+        prost::Message::encoded_len(self)
+    }
 }
 
 pub trait ToMessage {
