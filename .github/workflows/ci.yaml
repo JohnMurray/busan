@@ -85,7 +85,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --workspace -- -W warnings
+          args: --workspace
 
   spell_check:
     name: Spell Check
