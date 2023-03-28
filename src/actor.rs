@@ -169,7 +169,7 @@ impl ActorAddress {
     }
 
     pub(crate) fn send(&self, message: Box<dyn Message>) {
-        let result = (&self.mailbox.borrow().as_ref().unwrap()).send(message);
+        let result = (self.mailbox.borrow().as_ref().unwrap()).send(message);
         // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
         //       redirect to the dead letter queue. This function may simply return an error
         //       so that the caller can do the redirection.

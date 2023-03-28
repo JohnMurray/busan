@@ -13,7 +13,7 @@ pub trait ToMessage {
     fn to_message(self) -> Box<dyn Message>;
 
     fn is_primitive<L: private::IsLocal>(&self) -> bool {
-        return false;
+        false
     }
 }
 

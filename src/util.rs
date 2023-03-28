@@ -35,3 +35,9 @@ impl<T> Clone for CommandChannel<T> {
         }
     }
 }
+
+impl Default for CommandChannel<()> {
+    fn default() -> Self {
+        CommandChannel::new()
+    }
+}

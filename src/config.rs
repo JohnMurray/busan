@@ -1,6 +1,7 @@
 use num_cpus;
 
 /// Configuration struct for an ActorSystem.
+#[derive(Default)]
 pub struct ActorSystemConfig {
     pub executor_config: ExecutorConfig,
 }
@@ -8,14 +9,6 @@ pub struct ActorSystemConfig {
 impl ActorSystemConfig {
     pub fn validate(&self) -> Result<(), String> {
         self.executor_config.validate()
-    }
-}
-
-impl Default for ActorSystemConfig {
-    fn default() -> Self {
-        ActorSystemConfig {
-            executor_config: ExecutorConfig::default(),
-        }
     }
 }
 

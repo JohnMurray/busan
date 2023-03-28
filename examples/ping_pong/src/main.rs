@@ -41,29 +41,27 @@ impl Actor for Ping {
     fn before_start(&mut self, mut ctx: Context) {
         self.pong_addr =
             Some(ctx.spawn_child::<_, Pong>("pong".to_string(), &I32Wrapper::default()));
-        ctx.send_message(&self.pong_addr.as_ref().unwrap(), "ping".to_message());
+        ctx.send_message(self.pong_addr.as_ref().unwrap(), "ping".to_message());
     }
 
     fn receive(&mut self, ctx: Context, _msg: Box<dyn Message>) {
         println!("received message");
         // assume it was a pong, send a ping
         match &self.pong_addr {
-            Some(addr) => ctx.send_message(&addr, "ping".to_message()),
+            Some(addr) => ctx.send_message(addr, "ping".to_message()),
             None => {}
         }
     }
 }
 impl Actor for Pong {
-    fn receive(&mut self, ctx: Context, _msg: Box<dyn Message>) {
+    fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
         println!("received message");
         // assume it was a ping, send a pong
-        match _msg.as_any().downcast_ref::<StringWrapper>() {
-            Some(msg) => println!("received message: {}", msg.value),
-            None => {}
+        if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
+            println!("received message: {}", strMsg.value);
         }
-        match &self.ping_addr {
-            Some(addr) => ctx.send_message(&addr, "pong".to_message()),
-            None => {}
+        if let Some(addr) = &self.ping_addr {
+            ctx.send_message(addr, "pong".to_message());
         }
     }
 }

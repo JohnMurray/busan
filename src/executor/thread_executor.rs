@@ -95,8 +95,7 @@ impl Executor for ThreadExecutor {
                 for (_, cell) in self.actor_cells.iter_mut() {
                     if !cell.mailbox.is_empty() {
                         let result = cell.mailbox.try_recv();
-                        if result.is_ok() {
-                            let msg = result.unwrap();
+                        if let Ok(msg) = result {
                             trace!("processing message {:?} for actor {}", &msg, &cell.address);
                             cell.actor.receive(
                                 Context {

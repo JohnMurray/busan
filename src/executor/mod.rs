@@ -30,11 +30,11 @@ pub trait Executor {
 /// amounts to a channel to send commands through and a way to close or await closing
 /// of the executor.
 pub struct ExecutorHandle {
-    close_fn: Box<dyn FnOnce() -> ()>,
+    close_fn: Box<dyn FnOnce()>,
 }
 
 impl ExecutorHandle {
-    pub fn new<F: FnOnce() -> () + 'static>(close_fn: F) -> ExecutorHandle {
+    pub fn new<F: FnOnce() + 'static>(close_fn: F) -> ExecutorHandle {
         ExecutorHandle {
             close_fn: Box::new(close_fn),
         }
