@@ -1,12 +1,28 @@
 use crate::message::Message;
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::{Receiver, Sender};
+use log::warn;
 use std::cell::RefCell;
 use std::fmt::{Display, Formatter};
 
-/// place-holder trait for an actor, this might change at some point
 pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
+
+    /// A receive for unhandled messages. Since message sending is untyped on the sender side,
+    /// the receiver is typed, __and__ the receiver may have dynamic behaviours, is it possible
+    /// that the actor is not capable of understanding or processing the given message. When this
+    /// is the case, the message should be handed off to this method.
+    ///
+    /// Currently this method is roughly a no-op and simply emits a warning message. In the future,
+    /// this will likely be used to forward the message to a dead letter queue.
+    fn unhandled(&mut self, ctx: Context, msg: Box<dyn Message>) {
+        // TODO: Log the sender of the message once the sender is available via the context
+        warn!(
+            "{}: unhandled message: ({} bytes)",
+            ctx.address.uri,
+            msg.encoded_len()
+        );
+    }
 
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>);
 }
