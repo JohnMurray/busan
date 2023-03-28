@@ -5,7 +5,7 @@ use std::thread;
 
 use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit};
 use crate::config;
-use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorFactory, ExecutorHandle};
+use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::message::Message;
 use crate::util::CommandChannel;
 
@@ -16,7 +16,6 @@ use crate::util::CommandChannel;
 /// Once the ActorSystem is initialized through the `init()` function, control and management
 /// of the executors and actors is delegated to the RuntimeManager.
 pub struct ActorSystem {
-    executor_factory: Box<dyn ExecutorFactory>,
     executors: HashMap<String, ExecutorHandle>,
     runtime_manager: RuntimeManagerRef,
     runtime_thread_handle: thread::JoinHandle<()>,
@@ -54,7 +53,6 @@ impl ActorSystem {
         });
 
         ActorSystem {
-            executor_factory,
             executors,
             runtime_manager: runtime_manager_ref,
             runtime_thread_handle,
@@ -72,7 +70,7 @@ impl ActorSystem {
         init_msg: &B,
     ) {
         debug_assert!(
-            self.executors.len() > 0,
+            !self.executors.is_empty(),
             "No executors available to spawn actor"
         );
         debug_assert!(!self.root_actor_assigned, "Root actor already assigned");
@@ -155,7 +153,7 @@ impl RuntimeManager {
                 Ok(ManagerCommands::ExecutorShutdown { name }) => {
                     if self.executor_command_channels.contains_key(&name) {
                         self.executor_command_channels.remove(&name);
-                        if self.executor_command_channels.len() == 0 {
+                        if self.executor_command_channels.is_empty() {
                             break;
                         }
                     }
@@ -180,10 +178,9 @@ impl RuntimeManager {
                     return_channel,
                 }) => {
                     let mailbox_lookup = self.actor_registry.get(&address_uri);
-                    let result = if mailbox_lookup.is_none() {
-                        return_channel.try_send(None)
-                    } else {
-                        return_channel.try_send(Some(mailbox_lookup.unwrap().clone()))
+                    let result = match mailbox_lookup {
+                        Some(mailbox) => return_channel.try_send(Some(mailbox.clone())),
+                        None => return_channel.try_send(None),
                     };
                     if result.is_err() {
                         warn!(
