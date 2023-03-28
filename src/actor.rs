@@ -9,7 +9,7 @@ pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
 
     /// A receive for unhandled messages. Since message sending is untyped on the sender side,
-    /// the receiver is typed, __and__ the receiver may have dynamic behaviours, is it possible
+    /// the receiver is typed, __and__ the receiver may have dynamic behaviors, is it possible
     /// that the actor is not capable of understanding or processing the given message. When this
     /// is the case, the message should be handed off to this method.
     ///
