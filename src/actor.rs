@@ -20,7 +20,7 @@ pub trait Actor: Send {
         warn!(
             "{}: unhandled message: ({} bytes)",
             ctx.address.uri,
-            msg.encoded_len()
+            Message::encoded_len(msg.as_ref()),
         );
     }
 

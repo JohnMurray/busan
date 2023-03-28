@@ -42,10 +42,10 @@ impl Actor for Greet {
         println!("{}", self.greeting);
     }
 
-    fn receive(&mut self, _ctx: busan::actor::Context, _msg: Box<dyn Message>) {
-        match _msg.as_any().downcast_ref::<StringWrapper>() {
+    fn receive(&mut self, ctx: busan::actor::Context, msg: Box<dyn Message>) {
+        match msg.as_any().downcast_ref::<StringWrapper>() {
             Some(msg) => println!("received message: {}", msg.value),
-            None => {}
+            None => self.unhandled(ctx, msg),
         }
     }
 }
