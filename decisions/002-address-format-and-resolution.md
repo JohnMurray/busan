@@ -1,4 +1,4 @@
-# Decision 003: Address Format & Resolution
+# Decision 002: Address Format & Resolution
 __2023-02-10__
 
 ## Context/Problem
