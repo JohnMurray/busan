@@ -3,7 +3,7 @@ use log::{debug, warn};
 use std::collections::HashMap;
 use std::thread;
 
-use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit};
+use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Uri};
 use crate::config;
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::message::Message;
@@ -108,7 +108,7 @@ impl ActorSystem {
 struct RuntimeManager {
     /// Map of executor names to their command-channel (for sending commands)
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
-    actor_registry: HashMap<String, Sender<Box<dyn Message>>>,
+    actor_registry: HashMap<Uri, Sender<Box<dyn Message>>>,
 
     manager_command_channel: CommandChannel<ManagerCommands>,
 
@@ -284,7 +284,7 @@ enum ManagerCommands {
     /// A request to resolve an actor address to a mailbox. This is given a direct return
     /// channel so the sender can block on the result of the lookup if desired.
     ResolveAddress {
-        address_uri: String,
+        address_uri: Uri,
         return_channel: Sender<Option<Sender<Box<dyn Message>>>>,
     },
 }

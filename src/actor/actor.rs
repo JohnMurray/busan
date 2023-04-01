@@ -1,9 +1,8 @@
+use crate::actor::ActorAddress;
 use crate::message::Message;
 use crate::system::RuntimeManagerRef;
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::Receiver;
 use log::warn;
-use std::cell::RefCell;
-use std::fmt::{Display, Formatter};
 
 pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
@@ -71,6 +70,70 @@ impl ActorCell {
     }
 }
 
+/// `Letter` is the internal representation for messages sent between actors, containing the
+/// actual message (the payload) as well as some additional meta-data (currently just the sender).
+pub(crate) struct Letter {
+    pub(crate) sender: SenderType,
+    pub(crate) payload: Box<dyn Message>,
+}
+
+/// `SenderType` to abstractly represent the sender on a Letter. While the sender _could_ simply
+/// be represented as an `ActorAddress` always, this might add a lot of additional overhead that
+/// is otherwise not necessary. For example, an actor sending a message to itself will not need
+/// the address. Similarly, other circumstances may not require transmission of the address.
+pub(crate) enum SenderType {
+    Actor(ActorAddress),
+
+    /// A message that originates from the system will not have a sender address and is a
+    /// bit of an exception to the rule.
+    System,
+
+    /// A message that is sent by the parent (and thus is being received by the child) does not
+    /// need to have the address as all children should have a reference to their parent upon
+    /// creation.
+    Parent,
+
+    /// An actor sent a message to themselves (e.g. deferred processing, loopback, startup message,
+    /// etc.) Obviously we do not need to transmit the address in this case.
+    SentToSelf,
+}
+
+impl Letter {
+    /// Construct a new letter. This will automatically determine the sender type based on the
+    /// sender and receiver addresses. A `None` sender will always be interpreted as a
+    /// `SenderType::System`.
+    pub fn new(
+        sender: Option<ActorAddress>,
+        receiver: &ActorAddress,
+        payload: Box<dyn Message>,
+    ) -> Self {
+        match sender {
+            None => Self {
+                sender: SenderType::System,
+                payload,
+            },
+            Some(sender) => {
+                if sender.uri == receiver.uri {
+                    Self {
+                        sender: SenderType::SentToSelf,
+                        payload,
+                    }
+                } else if sender.is_parent(receiver) {
+                    Self {
+                        sender: SenderType::Parent,
+                        payload,
+                    }
+                } else {
+                    Self {
+                        sender: SenderType::Actor(sender),
+                        payload,
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Actor context object used for performing actions that interact with the running
 /// actor-system, such as spawning new actors.
 pub struct Context<'a> {
@@ -115,64 +178,5 @@ impl Context<'_> {
 
         // Send the message to the resolved address
         addr.send(message);
-    }
-}
-
-#[derive(Debug)]
-pub struct ActorAddress {
-    pub(crate) uri: String,
-
-    /// mailbox is a RefCell containing an optional sender. ActorAddresses may be created from
-    /// just a path, but once a message is sent that path will need to resolve to a mailbox. Once
-    /// the mailbox is resolved, it can be stored here for future use.
-    pub(crate) mailbox: RefCell<Option<Sender<Box<dyn Message>>>>,
-}
-
-impl Display for ActorAddress {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.uri)
-    }
-}
-
-impl Clone for ActorAddress {
-    fn clone(&self) -> Self {
-        Self {
-            uri: self.uri.clone(),
-            mailbox: RefCell::new(self.mailbox.borrow().clone()),
-        }
-    }
-}
-
-impl ActorAddress {
-    pub(crate) fn new_child(parent: &ActorAddress, name: &String, id: usize) -> Self {
-        let uri = format!("{}/{}-{}", parent.uri, name, id);
-        Self {
-            uri,
-            mailbox: RefCell::new(None),
-        }
-    }
-
-    pub(crate) fn new_root(name: &String) -> Self {
-        let uri = format!("local:/{}", name);
-        Self {
-            uri,
-            mailbox: RefCell::new(None),
-        }
-    }
-
-    pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn Message>>) {
-        *self.mailbox.borrow_mut() = Some(mailbox);
-    }
-
-    pub(crate) fn is_resolved(&self) -> bool {
-        self.mailbox.borrow().is_some()
-    }
-
-    pub(crate) fn send(&self, message: Box<dyn Message>) {
-        let result = (self.mailbox.borrow().as_ref().unwrap()).send(message);
-        // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
-        //       redirect to the dead letter queue. This function may simply return an error
-        //       so that the caller can do the redirection.
-        debug_assert!(result.is_ok(), "Error sending to actor address {}", self);
     }
 }
