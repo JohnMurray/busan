@@ -103,6 +103,9 @@ pub struct Uri {
 
 impl Uri {
     fn new(scheme: UriScheme, path_segments: &[&str]) -> Self {
+        if path_segments.is_empty() {
+            panic!("Uri must have at least one path segment");
+        }
         Self {
             scheme,
             path_segments: path_segments.iter().map(|s| String::from(*s)).collect(),
@@ -164,5 +167,116 @@ impl Display for Uri {
             UriScheme::Remote => write!(f, "remote://")?,
         }
         write!(f, "{}", self.path_segments.join("/"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_construction() {
+        // Test that an empty path is not allowed
+        Uri::new(UriScheme::Local, &[]);
+    }
+
+    #[test]
+    fn test_child_construction() {
+        // Create a child from a root path
+        let root = Uri::new(UriScheme::Local, &["root"]);
+        let child = root.new_child("child");
+
+        // Test the relationships between the two
+        assert_eq!(root.is_child(&child), true);
+        assert_eq!(child.is_parent(&root), true);
+
+        assert_eq!(root.is_parent(&child), false);
+        assert_eq!(child.is_child(&root), false);
+
+        // Create a grandchild from a child
+        let grandchild = child.new_child("grandchild");
+
+        // Test the relationships between the grandchild and the root. Since we're not looking
+        // at direct relationships, we expect the results to be false.
+        assert_eq!(root.is_child(&grandchild), false);
+        assert_eq!(grandchild.is_parent(&root), false);
+    }
+
+    #[test]
+    fn test_parent_construction() {
+        // Start from the bottom and create the parent and grandparent
+        let child = Uri::new(UriScheme::Local, &["grandparent", "parent", "child"]);
+        let parent = child.new_parent();
+        let grandparent = parent.new_parent();
+
+        // Test the relationship between the child and parent
+        assert_eq!(child.is_parent(&parent), true);
+        assert_eq!(parent.is_child(&child), true);
+        assert_eq!(child.is_child(&parent), false);
+        assert_eq!(parent.is_parent(&child), false);
+
+        // Test the relationship between the child and grandparent Since we're not looking
+        // at direct relationships, we expect the results to be false.
+        assert_eq!(child.is_parent(&grandparent), false);
+        assert_eq!(grandparent.is_child(&child), false);
+    }
+
+    #[test]
+    fn test_self_reference() {
+        let path = Uri::new(UriScheme::Local, &["root", "some", "path"]);
+        assert_eq!(path.is_child(&path), false);
+        assert_eq!(path.is_parent(&path), false);
+    }
+
+    #[test]
+    fn test_display() {
+        let test_cases = vec![
+            (vec!["geoip_updater"], "local://geoip_updater"),
+            (
+                vec!["geoip_updater", "download_manager"],
+                "local://geoip_updater/download_manager",
+            ),
+            (
+                vec!["geoip_updater", "download_manager", "fetch-0"],
+                "local://geoip_updater/download_manager/fetch-0",
+            ),
+            (
+                vec!["geoip_updater", "download_manager", "fetch-1"],
+                "local://geoip_updater/download_manager/fetch-1",
+            ),
+            (
+                vec!["geoip_updater", "indexer_manager"],
+                "local://geoip_updater/indexer_manager",
+            ),
+            (
+                vec!["geoip_updater", "indexer_manager", "indexer-0"],
+                "local://geoip_updater/indexer_manager/indexer-0",
+            ),
+            (
+                vec!["geoip_updater", "indexer_manager", "indexer-1"],
+                "local://geoip_updater/indexer_manager/indexer-1",
+            ),
+            (
+                vec!["geoip_updater", "publisher"],
+                "local://geoip_updater/publisher",
+            ),
+            (
+                vec!["geoip_updater", "publisher", "change_log"],
+                "local://geoip_updater/publisher/change_log",
+            ),
+            (
+                vec!["geoip_updater", "publisher", "database"],
+                "local://geoip_updater/publisher/database",
+            ),
+            (
+                vec!["geoip_updater", "publisher", "event_emitter"],
+                "local://geoip_updater/publisher/event_emitter",
+            ),
+        ];
+        for (path_segments, expected) in test_cases {
+            let uri = Uri::new(UriScheme::Local, &path_segments);
+            assert_eq!(uri.to_string(), expected);
+        }
     }
 }
