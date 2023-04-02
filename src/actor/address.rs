@@ -7,9 +7,9 @@ use std::fmt::{Display, Formatter};
 pub struct ActorAddress {
     pub(crate) uri: Uri,
 
-    /// mailbox is a RefCell containing an optional sender. ActorAddresses may be created from
-    /// just a path, but once a message is sent that path will need to resolve to a mailbox. Once
-    /// the mailbox is resolved, it can be stored here for future use.
+    /// `mailbox` is a `Sender` channel used for transmitting messages to the actor and is
+    /// is implemented as a `RefCell` for interior mutability. This allows for addresses creation
+    /// to be decoupled from resolution of the mailbox.
     pub(crate) mailbox: RefCell<Option<Sender<Box<dyn Message>>>>,
 }
 
