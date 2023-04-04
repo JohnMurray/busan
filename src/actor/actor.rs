@@ -120,9 +120,13 @@ impl Context<'_> {
     pub fn sender(&self) -> ActorAddress {
         match self.sender {
             SenderType::Actor(sender_address) => sender_address.clone(),
-            _ => {
-                todo!("Cannot currently get address from non-actor sender");
+            SenderType::Parent => {
+                todo!("Cannot currently get address from parent sender");
             }
+            SenderType::System => {
+                todo!("Cannot currently get address from system sender");
+            }
+            SenderType::SentToSelf => self.address.clone(),
         }
     }
 }
