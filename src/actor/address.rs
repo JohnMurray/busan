@@ -1,5 +1,5 @@
+use crate::actor::Mailbox;
 use crate::message::Message;
-use crossbeam_channel::Sender;
 use std::cell::RefCell;
 use std::fmt::{Display, Formatter};
 
@@ -10,7 +10,7 @@ pub struct ActorAddress {
     /// `mailbox` is a `Sender` channel used for transmitting messages to the actor and is
     /// is implemented as a `RefCell` for interior mutability. This allows for addresses creation
     /// to be decoupled from resolution of the mailbox.
-    pub(crate) mailbox: RefCell<Option<Sender<Box<dyn Message>>>>,
+    pub(crate) mailbox: RefCell<Option<Mailbox>>,
 }
 
 impl Display for ActorAddress {
@@ -43,7 +43,7 @@ impl ActorAddress {
         }
     }
 
-    pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn Message>>) {
+    pub(crate) fn set_mailbox(&self, mailbox: Mailbox) {
         *self.mailbox.borrow_mut() = Some(mailbox);
     }
 

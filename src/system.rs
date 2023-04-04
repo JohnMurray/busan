@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use std::thread;
 
 use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Uri};
-use crate::config;
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::message::Message;
 use crate::util::CommandChannel;
+use crate::{actor, config};
 
 /// ActorSystem is a user-facing handle/abstraction for the actor system. It exposes an
 /// interface for creating the system, spawning the root actor, and shutting down or awaiting
@@ -108,7 +108,7 @@ impl ActorSystem {
 struct RuntimeManager {
     /// Map of executor names to their command-channel (for sending commands)
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
-    actor_registry: HashMap<Uri, Sender<Box<dyn Message>>>,
+    actor_registry: HashMap<Uri, actor::Mailbox>,
 
     manager_command_channel: CommandChannel<ManagerCommands>,
 
@@ -248,9 +248,9 @@ impl RuntimeManagerRef {
 
     /// Resolve an address to mailbox by looking up the actor in the global registry. Note that this
     /// will block until the management thread has performed the lookup.
-    pub fn resolve_address(&self, address: &ActorAddress) -> Option<Sender<Box<dyn Message>>> {
+    pub fn resolve_address(&self, address: &ActorAddress) -> Option<actor::Mailbox> {
         let uri = address.uri.clone();
-        let (sender, receiver) = bounded::<Option<Sender<Box<dyn Message>>>>(1);
+        let (sender, receiver) = bounded::<Option<actor::Mailbox>>(1);
         self.manager_command_channel
             .send(ManagerCommands::ResolveAddress {
                 address_uri: uri,
@@ -285,6 +285,6 @@ enum ManagerCommands {
     /// channel so the sender can block on the result of the lookup if desired.
     ResolveAddress {
         address_uri: Uri,
-        return_channel: Sender<Option<Sender<Box<dyn Message>>>>,
+        return_channel: Sender<Option<actor::Mailbox>>,
     },
 }
