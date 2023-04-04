@@ -37,12 +37,6 @@ pub trait ActorInit {
         Self: Sized + Actor;
 }
 
-// NOTE:
-//   - Sending messages should always be a Message
-//   - Receiving messages could be an Any type which _should_ allow for better pattern matching
-//     against expected types. See:
-//     https://stackoverflow.com/questions/26126683/how-to-match-trait-implementors
-
 /// ActorCell is the wrapper to the user-defined actor, wrapping the mailbox parent references,
 /// and other actor-related information that is useful internally.
 pub struct ActorCell {
