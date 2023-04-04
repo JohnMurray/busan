@@ -1,4 +1,4 @@
-use crate::actor::ActorAddress;
+use crate::actor::{ActorAddress, Letter};
 use crate::message::Message;
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::Receiver;
@@ -47,7 +47,7 @@ pub trait ActorInit {
 /// and other actor-related information that is useful internally.
 pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
-    pub(crate) mailbox: Receiver<Box<dyn Message>>,
+    pub(crate) mailbox: Receiver<Letter>,
     pub(crate) address: ActorAddress,
 
     // Count of children that the actor has spawned. This is used to ensure that the actor names
@@ -56,9 +56,9 @@ pub struct ActorCell {
 }
 
 impl ActorCell {
-    pub fn new(
+    pub(crate) fn new(
         actor: Box<dyn Actor>,
-        mailbox: Receiver<Box<dyn Message>>,
+        mailbox: Receiver<Letter>,
         address: ActorAddress,
     ) -> Self {
         Self {
@@ -113,6 +113,6 @@ impl Context<'_> {
         debug_assert!(addr.is_resolved(), "Address {} is not resolved", addr);
 
         // Send the message to the resolved address
-        addr.send(message);
+        addr.send(Some(self.address.clone()), message);
     }
 }

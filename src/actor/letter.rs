@@ -3,6 +3,7 @@ use crate::message::Message;
 
 /// `Letter` is the internal representation for messages sent between actors, containing the
 /// actual message (the payload) as well as some additional meta-data (currently just the sender).
+#[derive(Debug)]
 pub(crate) struct Letter {
     pub(crate) sender: SenderType,
     pub(crate) payload: Box<dyn Message>,
@@ -12,6 +13,7 @@ pub(crate) struct Letter {
 /// be represented as an `ActorAddress` always, this might add a lot of additional overhead that
 /// is otherwise not necessary. For example, an actor sending a message to itself will not need
 /// the address. Similarly, other circumstances may not require transmission of the address.
+#[derive(Debug)]
 pub(crate) enum SenderType {
     Actor(ActorAddress),
 

@@ -3,9 +3,8 @@ use log::{debug, warn};
 use std::collections::HashMap;
 use std::thread;
 
-use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Uri};
+use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Letter, Uri};
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
-use crate::message::Message;
 use crate::util::CommandChannel;
 use crate::{actor, config};
 
@@ -160,7 +159,7 @@ impl RuntimeManager {
                 }
                 Ok(ManagerCommands::AssignActor { actor, address }) => {
                     let executor_name = self.get_next_executor();
-                    let (sender, receiver) = unbounded::<Box<dyn Message>>();
+                    let (sender, receiver) = unbounded::<Letter>();
                     let address_uri = address.uri.clone();
                     address.set_mailbox(sender.clone());
                     let cell = ActorCell::new(actor, receiver, address);
@@ -220,7 +219,7 @@ impl RuntimeManagerRef {
 
     /// Signal to the runtime manager to begin shutting down the system. This will result in
     /// shutdown notifications being sent to all of the executors.
-    pub fn shutdown_system(&self) {
+    pub(crate) fn shutdown_system(&self) {
         self.manager_command_channel
             .send(ManagerCommands::Shutdown)
             .unwrap();
@@ -229,7 +228,7 @@ impl RuntimeManagerRef {
     /// Signal to the runtime manager the the executor has completed (or is very near completing)
     /// shutdown. This should only be called by the executor itself as the final step of it's
     /// shutdown process.
-    pub fn notify_shutdown(&self, executor_name: String) {
+    pub(crate) fn notify_shutdown(&self, executor_name: String) {
         self.manager_command_channel
             .send(ManagerCommands::ExecutorShutdown {
                 name: executor_name,
@@ -240,7 +239,7 @@ impl RuntimeManagerRef {
     /// Request that a new actor be assigned to a runtime executor. This may be called when assigning
     /// either a root actor or a child actor. This should be used to avoid blocking actor creation
     /// on a single executor.
-    pub fn assign_actor(&self, actor: Box<dyn Actor>, address: ActorAddress) {
+    pub(crate) fn assign_actor(&self, actor: Box<dyn Actor>, address: ActorAddress) {
         self.manager_command_channel
             .send(ManagerCommands::AssignActor { actor, address })
             .unwrap();
@@ -248,7 +247,7 @@ impl RuntimeManagerRef {
 
     /// Resolve an address to mailbox by looking up the actor in the global registry. Note that this
     /// will block until the management thread has performed the lookup.
-    pub fn resolve_address(&self, address: &ActorAddress) -> Option<actor::Mailbox> {
+    pub(crate) fn resolve_address(&self, address: &ActorAddress) -> Option<actor::Mailbox> {
         let uri = address.uri.clone();
         let (sender, receiver) = bounded::<Option<actor::Mailbox>>(1);
         self.manager_command_channel

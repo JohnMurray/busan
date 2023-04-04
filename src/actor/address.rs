@@ -1,4 +1,4 @@
-use crate::actor::Mailbox;
+use crate::actor::{Letter, Mailbox};
 use crate::message::Message;
 use std::cell::RefCell;
 use std::fmt::{Display, Formatter};
@@ -51,8 +51,9 @@ impl ActorAddress {
         self.mailbox.borrow().is_some()
     }
 
-    pub(crate) fn send(&self, message: Box<dyn Message>) {
-        let result = (self.mailbox.borrow().as_ref().unwrap()).send(message);
+    pub(crate) fn send(&self, from: Option<Self>, message: Box<dyn Message>) {
+        let letter = Letter::new(from, self, message);
+        let result = (self.mailbox.borrow().as_ref().unwrap()).send(letter);
         // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
         //       redirect to the dead letter queue. This function may simply return an error
         //       so that the caller can do the redirection.

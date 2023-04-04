@@ -10,4 +10,4 @@ pub use actor::*;
 pub use address::*;
 pub use letter::*;
 
-pub type Mailbox = crossbeam_channel::Sender<Box<dyn crate::message::Message>>;
+pub(crate) type Mailbox = crossbeam_channel::Sender<Letter>;
