@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
-use crate::actor::{ActorCell, Context, Uri};
+use crate::actor::{ActorCell, Context, SenderType, Uri};
 use crate::executor::{
     CommandChannel, Executor, ExecutorCommands, ExecutorFactory, ExecutorHandle,
 };
@@ -82,6 +82,7 @@ impl Executor for ThreadExecutor {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
                             child_count: &mut cell.child_count,
+                            sender: &SenderType::System,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
@@ -106,6 +107,7 @@ impl Executor for ThreadExecutor {
                                     address: &cell.address,
                                     runtime_manager: &self.runtime_manager,
                                     child_count: &mut cell.child_count,
+                                    sender: &letter.sender,
                                 },
                                 letter.payload,
                             );

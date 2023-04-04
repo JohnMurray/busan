@@ -8,6 +8,6 @@ pub mod letter;
 
 pub use actor::*;
 pub use address::*;
-pub use letter::*;
+pub(crate) use letter::*;
 
 pub(crate) type Mailbox = crossbeam_channel::Sender<Letter>;

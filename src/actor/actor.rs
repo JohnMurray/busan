@@ -1,4 +1,4 @@
-use crate::actor::{ActorAddress, Letter};
+use crate::actor::{ActorAddress, Letter, SenderType};
 use crate::message::Message;
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::Receiver;
@@ -76,6 +76,7 @@ pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
     pub(crate) child_count: &'a mut usize,
+    pub(crate) sender: &'a SenderType,
 }
 
 impl Context<'_> {
@@ -114,5 +115,14 @@ impl Context<'_> {
 
         // Send the message to the resolved address
         addr.send(Some(self.address.clone()), message);
+    }
+
+    pub fn sender(&self) -> ActorAddress {
+        match self.sender {
+            SenderType::Actor(sender_address) => sender_address.clone(),
+            _ => {
+                todo!("Cannot currently get address from non-actor sender");
+            }
+        }
     }
 }
