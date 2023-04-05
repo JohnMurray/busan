@@ -18,6 +18,7 @@
     "userWords": [
         "busan",
         "cpus",
+        "geoip",  // "geo" "IP"
         "impl", // implementation shorthand
         "impls", // implementation shorthand (plural)
         "prost",

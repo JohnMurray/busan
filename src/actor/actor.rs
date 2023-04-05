@@ -1,9 +1,8 @@
+use crate::actor::{ActorAddress, Letter, SenderType};
 use crate::message::Message;
 use crate::system::RuntimeManagerRef;
-use crossbeam_channel::{Receiver, Sender};
-use log::warn;
-use std::cell::RefCell;
-use std::fmt::{Display, Formatter};
+use crossbeam_channel::Receiver;
+use log::{trace, warn};
 
 pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
@@ -38,35 +37,29 @@ pub trait ActorInit {
         Self: Sized + Actor;
 }
 
-// NOTE:
-//   - Sending messages should always be a Message
-//   - Receiving messages could be an Any type which _should_ allow for better pattern matching
-//     against expected types. See:
-//     https://stackoverflow.com/questions/26126683/how-to-match-trait-implementors
-
 /// ActorCell is the wrapper to the user-defined actor, wrapping the mailbox parent references,
 /// and other actor-related information that is useful internally.
 pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
-    pub(crate) mailbox: Receiver<Box<dyn Message>>,
+    pub(crate) mailbox: Receiver<Letter>,
     pub(crate) address: ActorAddress,
-
-    // Count of children that the actor has spawned. This is used to ensure that the actor names
-    // are unique, with the value being appended to each child name and incremented on each use.
-    pub(crate) child_count: usize,
+    pub(crate) children: Vec<ActorAddress>,
+    pub(crate) parent: Option<ActorAddress>,
 }
 
 impl ActorCell {
-    pub fn new(
+    pub(crate) fn new(
         actor: Box<dyn Actor>,
-        mailbox: Receiver<Box<dyn Message>>,
+        mailbox: Receiver<Letter>,
         address: ActorAddress,
+        parent: Option<ActorAddress>,
     ) -> Self {
         Self {
             actor,
             mailbox,
             address,
-            child_count: 0,
+            children: Vec::new(),
+            parent,
         }
     }
 }
@@ -76,7 +69,9 @@ impl ActorCell {
 pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
-    pub(crate) child_count: &'a mut usize,
+    pub(crate) parent: &'a Option<ActorAddress>,
+    pub(crate) children: &'a mut Vec<ActorAddress>,
+    pub(crate) sender: &'a SenderType,
 }
 
 impl Context<'_> {
@@ -85,13 +80,16 @@ impl Context<'_> {
     /// TODO: Ensure that actor names are unique
     pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
         &mut self,
-        name: String,
+        name: &str,
         init_msg: &B,
     ) -> ActorAddress {
-        let address = ActorAddress::new_child(self.address, &name, *self.child_count);
-        *(self.child_count) += 1;
-        self.runtime_manager
-            .assign_actor(Box::new(A::init(init_msg)), address.clone());
+        let address = ActorAddress::new_child(self.address, name, self.children.len());
+        self.children.push(address.clone());
+        self.runtime_manager.assign_actor(
+            Box::new(A::init(init_msg)),
+            address.clone(),
+            Some(self.address.clone()),
+        );
         address
     }
 
@@ -99,6 +97,7 @@ impl Context<'_> {
         // Validate that the address is resolved (this is a blocking call to the runtime
         // manager if unresolved).
         if !addr.is_resolved() {
+            trace!("Resolving address: {}", addr);
             match self.runtime_manager.resolve_address(addr) {
                 Some(resolved) => {
                     addr.set_mailbox(resolved);
@@ -114,65 +113,26 @@ impl Context<'_> {
         debug_assert!(addr.is_resolved(), "Address {} is not resolved", addr);
 
         // Send the message to the resolved address
-        addr.send(message);
+        addr.send(Some(self.address.clone()), message);
     }
-}
 
-#[derive(Debug)]
-pub struct ActorAddress {
-    pub(crate) uri: String,
-
-    /// mailbox is a RefCell containing an optional sender. ActorAddresses may be created from
-    /// just a path, but once a message is sent that path will need to resolve to a mailbox. Once
-    /// the mailbox is resolved, it can be stored here for future use.
-    pub(crate) mailbox: RefCell<Option<Sender<Box<dyn Message>>>>,
-}
-
-impl Display for ActorAddress {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.uri)
-    }
-}
-
-impl Clone for ActorAddress {
-    fn clone(&self) -> Self {
-        Self {
-            uri: self.uri.clone(),
-            mailbox: RefCell::new(self.mailbox.borrow().clone()),
-        }
-    }
-}
-
-impl ActorAddress {
-    pub(crate) fn new_child(parent: &ActorAddress, name: &String, id: usize) -> Self {
-        let uri = format!("{}/{}-{}", parent.uri, name, id);
-        Self {
-            uri,
-            mailbox: RefCell::new(None),
+    pub fn sender(&self) -> &'_ ActorAddress {
+        match self.sender {
+            SenderType::Actor(sender_address) => sender_address,
+            SenderType::Parent => {
+                if let Some(parent) = self.parent {
+                    return parent;
+                }
+                todo!("Cannot currently get address from parent sender");
+            }
+            SenderType::System => {
+                todo!("Cannot currently get address from system sender");
+            }
+            SenderType::SentToSelf => self.address,
         }
     }
 
-    pub(crate) fn new_root(name: &String) -> Self {
-        let uri = format!("local:/{}", name);
-        Self {
-            uri,
-            mailbox: RefCell::new(None),
-        }
-    }
-
-    pub(crate) fn set_mailbox(&self, mailbox: Sender<Box<dyn Message>>) {
-        *self.mailbox.borrow_mut() = Some(mailbox);
-    }
-
-    pub(crate) fn is_resolved(&self) -> bool {
-        self.mailbox.borrow().is_some()
-    }
-
-    pub(crate) fn send(&self, message: Box<dyn Message>) {
-        let result = (self.mailbox.borrow().as_ref().unwrap()).send(message);
-        // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
-        //       redirect to the dead letter queue. This function may simply return an error
-        //       so that the caller can do the redirection.
-        debug_assert!(result.is_ok(), "Error sending to actor address {}", self);
+    pub fn children(&self) -> &[ActorAddress] {
+        self.children
     }
 }

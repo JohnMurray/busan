@@ -1,9 +1,9 @@
-use log::{debug, trace};
+use log::{debug, info, trace};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
-use crate::actor::{ActorCell, Context};
+use crate::actor::{ActorCell, Context, SenderType, Uri};
 use crate::executor::{
     CommandChannel, Executor, ExecutorCommands, ExecutorFactory, ExecutorHandle,
 };
@@ -31,7 +31,7 @@ struct ThreadExecutor {
 
     // map of actor names to actors where the key (actor name) is part of the address-to-actor
     // resolution
-    actor_cells: HashMap<String, ActorCell>,
+    actor_cells: HashMap<Uri, ActorCell>,
 
     // Handle for sending commands to the current executor. Useful for spawning new actors
     // on the main event loop, or any action that may need to be performed in a slightly
@@ -56,11 +56,11 @@ impl ThreadExecutor {
         }
     }
 
-    /// Utility function for ensuring that the name of an actor is unique. Useful before
+    /// Utility function for ensuring that the address of an actor is unique. Useful before
     /// inserting a new entry in the actor store (when creating actors).
-    fn assert_name_unique(&self, name: &str) {
-        if self.actor_cells.contains_key(name) {
-            panic!("Actor name {} already exists", name);
+    fn assert_unique_address(&self, address: &Uri) {
+        if self.actor_cells.contains_key(address) {
+            panic!("Actor name {} already exists", address);
         }
     }
 }
@@ -72,40 +72,41 @@ impl Executor for ThreadExecutor {
             if !self.command_channel.recv_is_empty() {
                 match self.command_channel.recv().unwrap() {
                     ExecutorCommands::AssignActor(mut cell) => {
-                        debug!(
-                            "received assign-root-actor command for actor {}",
-                            &cell.address.uri
-                        );
-                        self.assert_name_unique(&cell.address.uri);
+                        debug!("received actor assignment for {}", &cell.address.uri);
+                        self.assert_unique_address(&cell.address.uri);
                         trace!("calling before_start for actor {}", &cell.address.uri);
                         cell.actor.before_start(Context {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
-                            child_count: &mut cell.child_count,
+                            parent: &cell.parent,
+                            children: &mut cell.children,
+                            sender: &SenderType::System,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
                     ExecutorCommands::Shutdown => {
-                        debug!("received shutdown command");
+                        info!("received shutdown command");
                         break;
                     }
                 }
-                // Iterate over the actor-cells and check if there are any non-empty mailboxes.
-                // If one is found, process a message from it.
-                for (_, cell) in self.actor_cells.iter_mut() {
-                    if !cell.mailbox.is_empty() {
-                        let result = cell.mailbox.try_recv();
-                        if let Ok(msg) = result {
-                            trace!("processing message {:?} for actor {}", &msg, &cell.address);
-                            cell.actor.receive(
-                                Context {
-                                    address: &cell.address,
-                                    runtime_manager: &self.runtime_manager,
-                                    child_count: &mut cell.child_count,
-                                },
-                                msg,
-                            );
-                        }
+            }
+            // Iterate over the actor-cells and check if there are any non-empty mailboxes.
+            // If one is found, process a message from it.
+            for (_, cell) in self.actor_cells.iter_mut() {
+                if !cell.mailbox.is_empty() {
+                    let result = cell.mailbox.try_recv();
+                    if let Ok(letter) = result {
+                        trace!("[{}] processing message: {:?}", &cell.address, &letter);
+                        cell.actor.receive(
+                            Context {
+                                address: &cell.address,
+                                runtime_manager: &self.runtime_manager,
+                                parent: &cell.parent,
+                                children: &mut cell.children,
+                                sender: &letter.sender,
+                            },
+                            letter.payload,
+                        );
                     }
                 }
             }
