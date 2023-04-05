@@ -2,7 +2,7 @@ use crate::actor::{ActorAddress, Letter, SenderType};
 use crate::message::Message;
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::Receiver;
-use log::warn;
+use log::{trace, warn};
 
 pub trait Actor: Send {
     fn before_start(&mut self, _ctx: Context) {}
@@ -43,10 +43,8 @@ pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
     pub(crate) mailbox: Receiver<Letter>,
     pub(crate) address: ActorAddress,
-
-    // Count of children that the actor has spawned. This is used to ensure that the actor names
-    // are unique, with the value being appended to each child name and incremented on each use.
-    pub(crate) child_count: usize,
+    pub(crate) children: Vec<ActorAddress>,
+    pub(crate) parent: Option<ActorAddress>,
 }
 
 impl ActorCell {
@@ -54,12 +52,14 @@ impl ActorCell {
         actor: Box<dyn Actor>,
         mailbox: Receiver<Letter>,
         address: ActorAddress,
+        parent: Option<ActorAddress>,
     ) -> Self {
         Self {
             actor,
             mailbox,
             address,
-            child_count: 0,
+            children: Vec::new(),
+            parent,
         }
     }
 }
@@ -69,7 +69,8 @@ impl ActorCell {
 pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
-    pub(crate) child_count: &'a mut usize,
+    pub(crate) parent: &'a Option<ActorAddress>,
+    pub(crate) children: &'a mut Vec<ActorAddress>,
     pub(crate) sender: &'a SenderType,
 }
 
@@ -82,10 +83,13 @@ impl Context<'_> {
         name: String,
         init_msg: &B,
     ) -> ActorAddress {
-        let address = ActorAddress::new_child(self.address, &name, *self.child_count);
-        *(self.child_count) += 1;
-        self.runtime_manager
-            .assign_actor(Box::new(A::init(init_msg)), address.clone());
+        let address = ActorAddress::new_child(self.address, &name, self.children.len());
+        self.children.push(address.clone());
+        self.runtime_manager.assign_actor(
+            Box::new(A::init(init_msg)),
+            address.clone(),
+            Some(self.address.clone()),
+        );
         address
     }
 
@@ -93,6 +97,7 @@ impl Context<'_> {
         // Validate that the address is resolved (this is a blocking call to the runtime
         // manager if unresolved).
         if !addr.is_resolved() {
+            trace!("Resolving address: {}", addr);
             match self.runtime_manager.resolve_address(addr) {
                 Some(resolved) => {
                     addr.set_mailbox(resolved);
@@ -111,16 +116,23 @@ impl Context<'_> {
         addr.send(Some(self.address.clone()), message);
     }
 
-    pub fn sender(&self) -> ActorAddress {
+    pub fn sender(&self) -> &'_ ActorAddress {
         match self.sender {
-            SenderType::Actor(sender_address) => sender_address.clone(),
+            SenderType::Actor(sender_address) => sender_address,
             SenderType::Parent => {
+                if let Some(parent) = self.parent {
+                    return parent;
+                }
                 todo!("Cannot currently get address from parent sender");
             }
             SenderType::System => {
                 todo!("Cannot currently get address from system sender");
             }
-            SenderType::SentToSelf => self.address.clone(),
+            SenderType::SentToSelf => self.address,
         }
+    }
+
+    pub fn children(&self) -> &[ActorAddress] {
+        self.children
     }
 }

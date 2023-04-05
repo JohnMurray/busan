@@ -1,5 +1,5 @@
 use crossbeam_channel::{bounded, unbounded, Sender};
-use log::{debug, warn};
+use log::{debug, info, warn};
 use std::collections::HashMap;
 use std::thread;
 
@@ -75,8 +75,11 @@ impl ActorSystem {
         debug_assert!(!self.root_actor_assigned, "Root actor already assigned");
 
         self.root_actor_assigned = true;
-        self.runtime_manager
-            .assign_actor(Box::new(A::init(init_msg)), ActorAddress::new_root(&name));
+        self.runtime_manager.assign_actor(
+            Box::new(A::init(init_msg)),
+            ActorAddress::new_root(&name),
+            None,
+        );
     }
 
     /// Send shutdown message to all executors and wait for them to finish. This includes
@@ -157,12 +160,16 @@ impl RuntimeManager {
                         }
                     }
                 }
-                Ok(ManagerCommands::AssignActor { actor, address }) => {
+                Ok(ManagerCommands::AssignActor {
+                    actor,
+                    address,
+                    parent,
+                }) => {
                     let executor_name = self.get_next_executor();
                     let (sender, receiver) = unbounded::<Letter>();
                     let address_uri = address.uri.clone();
                     address.set_mailbox(sender.clone());
-                    let cell = ActorCell::new(actor, receiver, address);
+                    let cell = ActorCell::new(actor, receiver, address, parent);
 
                     self.actor_registry.insert(address_uri, sender);
 
@@ -192,7 +199,7 @@ impl RuntimeManager {
             }
         }
 
-        debug!("Runtime manager shutting down");
+        info!("Runtime manager shutting down");
     }
 
     fn get_next_executor(&mut self) -> String {
@@ -239,9 +246,18 @@ impl RuntimeManagerRef {
     /// Request that a new actor be assigned to a runtime executor. This may be called when assigning
     /// either a root actor or a child actor. This should be used to avoid blocking actor creation
     /// on a single executor.
-    pub(crate) fn assign_actor(&self, actor: Box<dyn Actor>, address: ActorAddress) {
+    pub(crate) fn assign_actor(
+        &self,
+        actor: Box<dyn Actor>,
+        address: ActorAddress,
+        parent: Option<ActorAddress>,
+    ) {
         self.manager_command_channel
-            .send(ManagerCommands::AssignActor { actor, address })
+            .send(ManagerCommands::AssignActor {
+                actor,
+                address,
+                parent,
+            })
             .unwrap();
     }
 
@@ -278,6 +294,7 @@ enum ManagerCommands {
     AssignActor {
         actor: Box<dyn Actor>,
         address: ActorAddress,
+        parent: Option<ActorAddress>,
     },
 
     /// A request to resolve an actor address to a mailbox. This is given a direct return

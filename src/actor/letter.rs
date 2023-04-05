@@ -51,7 +51,8 @@ impl Letter {
                         sender: SenderType::SentToSelf,
                         payload,
                     }
-                } else if sender.is_parent(receiver) {
+                } else if receiver.is_parent(&sender) {
+                    // The sender is the parent to the receiver
                     Self {
                         sender: SenderType::Parent,
                         payload,

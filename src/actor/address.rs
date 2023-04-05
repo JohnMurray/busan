@@ -1,5 +1,6 @@
 use crate::actor::{Letter, Mailbox};
 use crate::message::Message;
+use log::trace;
 use std::cell::RefCell;
 use std::fmt::{Display, Formatter};
 
@@ -52,6 +53,14 @@ impl ActorAddress {
     }
 
     pub(crate) fn send(&self, from: Option<Self>, message: Box<dyn Message>) {
+        trace!(
+            "[{}] Sending message to {}",
+            (&from.as_ref())
+                .map(|from| format!("{}", from))
+                .unwrap_or_else(|| "".to_string()),
+            self
+        );
+
         let letter = Letter::new(from, self, message);
         let result = (self.mailbox.borrow().as_ref().unwrap()).send(letter);
         // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
@@ -60,8 +69,8 @@ impl ActorAddress {
         debug_assert!(result.is_ok(), "Error sending to actor address {}", self);
     }
 
-    pub(crate) fn is_parent(&self, child: &ActorAddress) -> bool {
-        self.uri.is_parent(&child.uri)
+    pub(crate) fn is_parent(&self, maybe_parent: &ActorAddress) -> bool {
+        self.uri.is_parent(&maybe_parent.uri)
     }
 }
 

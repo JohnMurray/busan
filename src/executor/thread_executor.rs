@@ -1,4 +1,4 @@
-use log::{debug, trace};
+use log::{debug, info, trace};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
@@ -72,46 +72,41 @@ impl Executor for ThreadExecutor {
             if !self.command_channel.recv_is_empty() {
                 match self.command_channel.recv().unwrap() {
                     ExecutorCommands::AssignActor(mut cell) => {
-                        debug!(
-                            "received assign-root-actor command for actor {}",
-                            &cell.address.uri
-                        );
+                        debug!("received actor assignment for {}", &cell.address.uri);
                         self.assert_unique_address(&cell.address.uri);
                         trace!("calling before_start for actor {}", &cell.address.uri);
                         cell.actor.before_start(Context {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
-                            child_count: &mut cell.child_count,
+                            parent: &cell.parent,
+                            children: &mut cell.children,
                             sender: &SenderType::System,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
                     ExecutorCommands::Shutdown => {
-                        debug!("received shutdown command");
+                        info!("received shutdown command");
                         break;
                     }
                 }
-                // Iterate over the actor-cells and check if there are any non-empty mailboxes.
-                // If one is found, process a message from it.
-                for (_, cell) in self.actor_cells.iter_mut() {
-                    if !cell.mailbox.is_empty() {
-                        let result = cell.mailbox.try_recv();
-                        if let Ok(letter) = result {
-                            trace!(
-                                "processing message {:?} for actor {}",
-                                &letter,
-                                &cell.address
-                            );
-                            cell.actor.receive(
-                                Context {
-                                    address: &cell.address,
-                                    runtime_manager: &self.runtime_manager,
-                                    child_count: &mut cell.child_count,
-                                    sender: &letter.sender,
-                                },
-                                letter.payload,
-                            );
-                        }
+            }
+            // Iterate over the actor-cells and check if there are any non-empty mailboxes.
+            // If one is found, process a message from it.
+            for (_, cell) in self.actor_cells.iter_mut() {
+                if !cell.mailbox.is_empty() {
+                    let result = cell.mailbox.try_recv();
+                    if let Ok(letter) = result {
+                        trace!("[{}] processing message: {:?}", &cell.address, &letter);
+                        cell.actor.receive(
+                            Context {
+                                address: &cell.address,
+                                runtime_manager: &self.runtime_manager,
+                                parent: &cell.parent,
+                                children: &mut cell.children,
+                                sender: &letter.sender,
+                            },
+                            letter.payload,
+                        );
                     }
                 }
             }
