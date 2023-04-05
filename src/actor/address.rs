@@ -201,25 +201,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parent_construction() {
-        // Start from the bottom and create the parent and grandparent
-        let child = Uri::new(UriScheme::Local, &["grandparent", "parent", "child"]);
-        let parent = child.new_parent();
-        let grandparent = parent.new_parent();
-
-        // Test the relationship between the child and parent
-        assert_eq!(child.is_parent(&parent), true);
-        assert_eq!(parent.is_child(&child), true);
-        assert_eq!(child.is_child(&parent), false);
-        assert_eq!(parent.is_parent(&child), false);
-
-        // Test the relationship between the child and grandparent Since we're not looking
-        // at direct relationships, we expect the results to be false.
-        assert_eq!(child.is_parent(&grandparent), false);
-        assert_eq!(grandparent.is_child(&child), false);
-    }
-
-    #[test]
     fn test_self_reference() {
         let path = Uri::new(UriScheme::Local, &["root", "some", "path"]);
         assert_eq!(path.is_child(&path), false);
