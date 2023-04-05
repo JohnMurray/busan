@@ -7,6 +7,7 @@ license-file = "../LICENSE"
 readme = "README.md"
 homepage = "https://github.com/JohnMurray/busan"
 repository = "https://github.com/JohnMurray/busan"
+description = "Utility library for generating Message traits for use with the busan crate"
 
 [lib]
 proc-macro = true
