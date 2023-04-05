@@ -1,5 +1,5 @@
 use crossbeam_channel::{bounded, unbounded, Sender};
-use log::{debug, info, warn};
+use log::{info, warn};
 use std::collections::HashMap;
 use std::thread;
 

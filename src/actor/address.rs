@@ -55,9 +55,9 @@ impl ActorAddress {
     pub(crate) fn send(&self, from: Option<Self>, message: Box<dyn Message>) {
         trace!(
             "[{}] Sending message to {}",
-            (&from.as_ref())
+            from.as_ref()
                 .map(|from| format!("{}", from))
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_else(String::default),
             self
         );
 
@@ -126,19 +126,6 @@ impl Uri {
     fn new_child(&self, sub_path: &str) -> Self {
         let mut path_segments = self.path_segments.clone();
         path_segments.push(String::from(sub_path));
-        Self {
-            scheme: self.scheme.clone(),
-            path_segments,
-        }
-    }
-
-    /// Construct a new `Uri` from `Self` with the last path segment removed. If there is only
-    /// one path segment (i.e. `Self` is the root), then effectively a copy of `Self` is returned.
-    fn new_parent(&self) -> Self {
-        let mut path_segments = self.path_segments.clone();
-        if path_segments.len() > 1 {
-            path_segments.pop();
-        }
         Self {
             scheme: self.scheme.clone(),
             path_segments,
