@@ -35,8 +35,7 @@ impl ActorInit for Pong {
 
 impl Actor for Ping {
     fn before_start(&mut self, mut ctx: Context) {
-        let pong_addr =
-            Some(ctx.spawn_child::<_, Pong>("pong".to_string(), &I32Wrapper::default()));
+        let pong_addr = Some(ctx.spawn_child::<_, Pong>("pong", &I32Wrapper::default()));
         ctx.send_message(pong_addr.as_ref().unwrap(), "ping".to_message());
     }
 
@@ -64,7 +63,7 @@ fn main() {
         .init();
 
     let mut system = ActorSystem::init(ActorSystemConfig::default());
-    system.spawn_root_actor::<_, Ping>("ping".to_string(), &I32Wrapper::default());
+    system.spawn_root_actor::<_, Ping>("ping", &I32Wrapper::default());
 
     thread::sleep(std::time::Duration::from_secs(1));
     system.shutdown();

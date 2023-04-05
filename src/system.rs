@@ -65,7 +65,7 @@ impl ActorSystem {
     /// the "main" function of the actor system.
     pub fn spawn_root_actor<B, A: ActorInit<Init = B> + Actor + 'static>(
         &mut self,
-        name: String,
+        name: &str,
         init_msg: &B,
     ) {
         debug_assert!(
@@ -77,7 +77,7 @@ impl ActorSystem {
         self.root_actor_assigned = true;
         self.runtime_manager.assign_actor(
             Box::new(A::init(init_msg)),
-            ActorAddress::new_root(&name),
+            ActorAddress::new_root(name),
             None,
         );
     }

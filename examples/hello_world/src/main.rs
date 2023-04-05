@@ -16,7 +16,7 @@ fn main() {
     let init = Init {
         greeting: "Hi there!".to_string(),
     };
-    system.spawn_root_actor::<_, Greet>("greeter".to_string(), &init);
+    system.spawn_root_actor::<_, Greet>("greeter", &init);
 
     thread::sleep(std::time::Duration::from_secs(1));
     system.shutdown();

@@ -30,14 +30,14 @@ impl Clone for ActorAddress {
 }
 
 impl ActorAddress {
-    pub(crate) fn new_child(parent: &ActorAddress, name: &String, id: usize) -> Self {
+    pub(crate) fn new_child(parent: &ActorAddress, name: &str, id: usize) -> Self {
         Self {
             uri: parent.uri.new_child(&format!("{}-{}", name, id)),
             mailbox: RefCell::new(None),
         }
     }
 
-    pub(crate) fn new_root(name: &String) -> Self {
+    pub(crate) fn new_root(name: &str) -> Self {
         Self {
             uri: Uri::new(UriScheme::Local, &[name]),
             mailbox: RefCell::new(None),
@@ -256,5 +256,19 @@ mod tests {
             let uri = Uri::new(UriScheme::Local, &path_segments);
             assert_eq!(uri.to_string(), expected);
         }
+    }
+
+    #[test]
+    fn test_address_parent_detection() {
+        let root = ActorAddress::new_root("root");
+        let child = ActorAddress::new_child(&root, "child", 0);
+
+        // Assert that "root" is the parent of child
+        assert_eq!(child.is_parent(&root), true);
+        assert_eq!(root.is_parent(&child), false);
+
+        // Assert that neither "root" or "child" are the parents of themselves
+        assert_eq!(root.is_parent(&root), false);
+        assert_eq!(child.is_parent(&child), false);
     }
 }

@@ -80,10 +80,10 @@ impl Context<'_> {
     /// TODO: Ensure that actor names are unique
     pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
         &mut self,
-        name: String,
+        name: &str,
         init_msg: &B,
     ) -> ActorAddress {
-        let address = ActorAddress::new_child(self.address, &name, self.children.len());
+        let address = ActorAddress::new_child(self.address, name, self.children.len());
         self.children.push(address.clone());
         self.runtime_manager.assign_actor(
             Box::new(A::init(init_msg)),
