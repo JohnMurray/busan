@@ -44,8 +44,7 @@ impl Actor for Ping {
         // Print the message and respond with a "ping"
         if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
             println!("received message: {}", strMsg.value);
-            let sender = ctx.sender();
-            ctx.send_message(&sender, "ping".to_message());
+            ctx.send_message(ctx.sender(), "ping".to_message());
         }
     }
 }
@@ -54,16 +53,19 @@ impl Actor for Pong {
         // Print the message and respond with a "pong"
         if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
             println!("received message: {}", strMsg.value);
-            let sender = ctx.sender();
-            ctx.send_message(&sender, "pong".to_message());
+            ctx.send_message(ctx.sender(), "pong".to_message());
         }
     }
 }
 
 fn main() {
+    env_logger::Builder::new()
+        .filter_level(::log::LevelFilter::Debug)
+        .init();
+
     let mut system = ActorSystem::init(ActorSystemConfig::default());
     system.spawn_root_actor::<_, Ping>("ping".to_string(), &I32Wrapper::default());
 
-    thread::sleep(std::time::Duration::from_secs(100));
+    thread::sleep(std::time::Duration::from_secs(1));
     system.shutdown();
 }
