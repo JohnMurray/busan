@@ -1,5 +1,7 @@
 ## WIP (unreleased)
 
+  + Added debug serialization macro (`debug_serialize_msg!`) for all sent messages
+
 ## 0.1.2 through 0.2.0
 
   + Added support for spawning actors (`0.1.2`)
