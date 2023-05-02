@@ -40,8 +40,8 @@ impl Actor for Ping {
 
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
         // Print the message and respond with a "ping"
-        if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
-            println!("received message: {}", strMsg.value);
+        if let Some(str_msg) = msg.as_any().downcast_ref::<StringWrapper>() {
+            println!("received message: {}", str_msg.value);
             ctx.send_message(ctx.sender(), "ping");
         }
     }
@@ -49,8 +49,8 @@ impl Actor for Ping {
 impl Actor for Pong {
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
         // Print the message and respond with a "pong"
-        if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
-            println!("received message: {}", strMsg.value);
+        if let Some(str_msg) = msg.as_any().downcast_ref::<StringWrapper>() {
+            println!("received message: {}", str_msg.value);
             ctx.send_message(ctx.sender(), "pong");
         }
     }
