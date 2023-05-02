@@ -88,7 +88,6 @@ pub struct Context<'a> {
 impl Context<'_> {
     /// Create a new (child) actor. Note that this may be a delayed action and the actor
     /// may not be created immediately.
-    /// TODO: Ensure that actor names are unique
     pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
         &mut self,
         name: &str,
@@ -140,10 +139,10 @@ impl Context<'_> {
                 if let Some(parent) = self.parent {
                     return parent;
                 }
-                todo!("Cannot currently get address from parent sender");
+                panic!("Message sent from parent, but no parent sender found")
             }
             SenderType::System => {
-                todo!("Cannot currently get address from system sender");
+                panic!("Cannot retrieve a sender for system messages");
             }
             SenderType::SentToSelf => self.address,
         }
