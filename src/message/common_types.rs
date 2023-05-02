@@ -8,11 +8,11 @@ macro_rules! impl_to_message_for_primitive {
         impl_to_message_for_primitive!($t, $wrapper, |x| x);
     };
     ($t:ty, $wrapper:ident, $converter:expr $(, $deref:tt)?) => {
-        impl ToMessage for $t {
-            fn to_message(self) -> Box<dyn Message> {
-                Box::new($wrapper {
+        impl ToMessage<$wrapper> for $t {
+            fn to_message(self) -> $wrapper {
+                $wrapper {
                     value: $converter($($deref)* self),
-                })
+                }
             }
             fn is_primitive<L: message::private::IsLocal>(&self) -> bool {
                 return true;
@@ -50,39 +50,39 @@ impl_to_message_for_primitive!(&str, StringWrapper, |x: &str| x.to_string());
 macro_rules! impl_to_message_for_primitive_list {
     // Owned types that don't need conversion
     ($t:ty, $wrapper:ident) => {
-        impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn Message> {
-                Box::new($wrapper { values: self })
+        impl ToMessage<$wrapper> for Vec<$t> {
+            fn to_message(self) -> $wrapper {
+                $wrapper { values: self }
             }
         }
     };
     // Owned types that need conversion
     ($t:ty, $wrapper:ident, $converter:expr) => {
-        impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn Message> {
-                Box::new($wrapper {
+        impl ToMessage<$wrapper> for Vec<$t> {
+            fn to_message(self) -> $wrapper {
+                $wrapper {
                     values: self.iter().map(|x| $converter(*x)).collect(),
-                })
+                }
             }
         }
     };
     // Borrowed types that don't need conversion
     (&$t:ty, $wrapper:ident, clone) => {
-        impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn Message> {
-                Box::new($wrapper {
+        impl ToMessage<$wrapper> for Vec<$t> {
+            fn to_message(self) -> $wrapper {
+                $wrapper {
                     values: self.clone(),
-                })
+                }
             }
         }
     };
     // Borrowed types that need conversion
     (&$t:ty, $wrapper:ident, $converter:expr) => {
-        impl ToMessage for Vec<$t> {
-            fn to_message(self) -> Box<dyn Message> {
-                Box::new($wrapper {
+        impl ToMessage<$wrapper> for Vec<$t> {
+            fn to_message(self) -> $wrapper {
+                $wrapper {
                     values: self.iter().map(|x| $converter(x)).collect(),
-                })
+                }
             }
         }
     };
@@ -108,6 +108,9 @@ macro_rules! impl_busan_message {
         impl Message for $t {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
+            }
+            fn encode_to_vec2(&self) -> Vec<u8> {
+                prost::Message::encode_to_vec(self)
             }
         }
     };

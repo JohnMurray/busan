@@ -3,17 +3,31 @@ pub mod common_types;
 pub trait Message: prost::Message {
     fn as_any(&self) -> &dyn std::any::Any;
 
+    /// A version of encode_to_vec that does not have a default implementation or
+    /// `Self: Sized` requirement. This allows us to implement this directly on the
+    /// type and use dynamic dispatch indirectly call `encode_to_vec` on `prost::Message`
+    /// and satisfy the `Sized` requirement.
+    #[doc(hidden)]
+    fn encode_to_vec2(&self) -> Vec<u8>;
+
     #[doc(hidden)]
     fn encoded_len(&self) -> usize {
         prost::Message::encoded_len(self)
     }
 }
 
-pub trait ToMessage {
-    fn to_message(self) -> Box<dyn Message>;
+pub trait ToMessage<M: Message> {
+    fn to_message(self) -> M;
 
     fn is_primitive<L: private::IsLocal>(&self) -> bool {
         false
+    }
+}
+
+/// Impl ToMessage for all types that are already messages.
+impl<M: Message> ToMessage<M> for M {
+    fn to_message(self) -> M {
+        self
     }
 }
 

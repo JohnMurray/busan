@@ -2,7 +2,7 @@
 use busan::actor::{Actor, ActorInit, Context};
 use busan::config::ActorSystemConfig;
 use busan::message::common_types::{I32Wrapper, StringWrapper};
-use busan::message::{Message, ToMessage};
+use busan::message::Message;
 use busan::system::ActorSystem;
 use std::thread;
 
@@ -36,14 +36,14 @@ impl ActorInit for Pong {
 impl Actor for Ping {
     fn before_start(&mut self, mut ctx: Context) {
         let pong_addr = Some(ctx.spawn_child::<_, Pong>("pong", &I32Wrapper::default()));
-        ctx.send_message(pong_addr.as_ref().unwrap(), "ping".to_message());
+        ctx.send_message(pong_addr.as_ref().unwrap(), "ping");
     }
 
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
         // Print the message and respond with a "ping"
         if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
             println!("received message: {}", strMsg.value);
-            ctx.send_message(ctx.sender(), "ping".to_message());
+            ctx.send_message(ctx.sender(), "ping");
         }
     }
 }
@@ -52,7 +52,7 @@ impl Actor for Pong {
         // Print the message and respond with a "pong"
         if let Some(strMsg) = msg.as_any().downcast_ref::<StringWrapper>() {
             println!("received message: {}", strMsg.value);
-            ctx.send_message(ctx.sender(), "pong".to_message());
+            ctx.send_message(ctx.sender(), "pong");
         }
     }
 }

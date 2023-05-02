@@ -14,6 +14,10 @@ pub fn message(input: TokenStream) -> TokenStream {
             fn as_any(&self) -> &dyn ::std::any::Any {
                 self
             }
+
+            fn encode_to_vec2(&self) -> Vec<u8> {
+                prost::Message::encode_to_vec(self)
+            }
         }
     };
 
