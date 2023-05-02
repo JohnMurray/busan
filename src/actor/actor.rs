@@ -1,5 +1,5 @@
 use crate::actor::{ActorAddress, Letter, SenderType};
-use crate::message::Message;
+use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
@@ -64,6 +64,17 @@ impl ActorCell {
     }
 }
 
+macro_rules! debug_serialize_msg {
+    ($msg:expr, $T:tt) => {
+        if cfg!(debug_assertions) {
+            let bytes = $msg.encode_to_vec2();
+            $T::decode(bytes.as_slice()).unwrap()
+        } else {
+            $msg
+        }
+    };
+}
+
 /// Actor context object used for performing actions that interact with the running
 /// actor-system, such as spawning new actors.
 pub struct Context<'a> {
@@ -93,7 +104,11 @@ impl Context<'_> {
         address
     }
 
-    pub fn send_message(&self, addr: &ActorAddress, message: Box<dyn Message>) {
+    pub fn send_message<M: Message + Default + 'static, T: ToMessage<M>>(
+        &self,
+        addr: &ActorAddress,
+        message: T,
+    ) {
         // Validate that the address is resolved (this is a blocking call to the runtime
         // manager if unresolved).
         if !addr.is_resolved() {
@@ -112,8 +127,10 @@ impl Context<'_> {
         // forwarded to the dead letter queue.
         debug_assert!(addr.is_resolved(), "Address {} is not resolved", addr);
 
+        let message = debug_serialize_msg!(message.to_message(), M);
+
         // Send the message to the resolved address
-        addr.send(Some(self.address.clone()), message);
+        addr.send(Some(self.address.clone()), Box::new(message));
     }
 
     pub fn sender(&self) -> &'_ ActorAddress {
