@@ -1,5 +1,5 @@
 [package]
-name = "examples__hello_world"
+name = "examples_hello_world"
 version = "0.0.0"
 publish = false
 edition = "2021"

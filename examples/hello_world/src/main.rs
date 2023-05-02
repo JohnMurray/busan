@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 use busan::actor::{Actor, ActorInit};
 use busan::config::ActorSystemConfig;
 use busan::message::common_types::StringWrapper;
