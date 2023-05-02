@@ -1,5 +1,6 @@
 use crate::actor::ActorAddress;
 use crate::message::Message;
+use std::fmt::{Display, Formatter};
 
 /// `Letter` is the internal representation for messages sent between actors, containing the
 /// actual message (the payload) as well as some additional meta-data (currently just the sender).
@@ -29,6 +30,17 @@ pub(crate) enum SenderType {
     /// An actor sent a message to themselves (e.g. deferred processing, loopback, startup message,
     /// etc.) Obviously we do not need to transmit the address in this case.
     SentToSelf,
+}
+
+impl Display for SenderType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SenderType::Actor(addr) => addr.fmt(f),
+            SenderType::System => write!(f, "System"),
+            SenderType::Parent => write!(f, "Parent"),
+            SenderType::SentToSelf => write!(f, "Self"),
+        }
+    }
 }
 
 impl Letter {
