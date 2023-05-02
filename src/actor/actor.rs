@@ -15,11 +15,11 @@ pub trait Actor: Send {
     /// Currently this method is roughly a no-op and simply emits a warning message. In the future,
     /// this will likely be used to forward the message to a dead letter queue.
     fn unhandled(&mut self, ctx: Context, msg: Box<dyn Message>) {
-        // TODO: Log the sender of the message once the sender is available via the context
         warn!(
-            "{}: unhandled message: ({} bytes)",
+            "{}: unhandled message ({} bytes) sent from {}",
             ctx.address.uri,
             Message::encoded_len(msg.as_ref()),
+            ctx.sender,
         );
     }
 
