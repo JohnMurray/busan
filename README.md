@@ -1,4 +1,4 @@
-# busan
+# busan (부산)
 
 [![Crates.io][crates-badge]][crates-url]
 [![Build Status][actions-badge]][actions-url]
@@ -18,7 +18,8 @@
   [change-log-url]: https://github.com/JohnMurray/busan/blob/main/CHANGELOG.md
 
 Busan is an [actor][wikipedia_actor] implementation for Rust that is currently under heavy
-development and is experimental in nature. It is not yet ready for production use.
+development and is experimental in nature. It is not yet ready for production use, although
+it usable to build hobby/personal projects on.
 
   [wikipedia_actor]: https://en.wikipedia.org/wiki/Actor_model
 
@@ -28,22 +29,27 @@ The project lacks comprehensive documentation at this time, however I am experim
 logs][decision-log-url] as a way to document and communicate the major design decisions that were
 made.
 
-Of course the source code is also lightly documented and available at [docs.rs][docs-rs-busan].
+Of course the source code is also lightly documented and available at [docs.rs][docs-rs-busan]
+and there are fully functional examples available in the [examples folder][examples-url].
 
   [docs-rs-busan]: https://docs.rs/busan/latest/busan/
+  [examples-url]: https://github.com/JohnMurray/busan/blob/main/examples/
 
 ## Roadmap
 
-I don't have a long-term roadmap laid out for the project and I don't expect plans to be super detailed
-outside the short-term milestones. I'm currently using GitHub's Project feature to organize my work,
-which is publicly viewable [here][github_project]. Generally my plan looks like:
+The roadmap is constantly evolving, so I don't expect plans to be super detailed outside
+the short-term milestones. I'm currently using GitHub's Project feature to organize my work,
+which is publicly viewable [here][github_project] and the current milestone should be
+up-to-date. Generally my plan looks like:
 
-  + [~~`0.2.0`~~][m1] - Spawn actors, send and receive messages (shipped)
-  + [`0.3.0`][m2] - Actor utilities - routers, timers, ask-pattern, behaviors, etc.
-  + `0.4.0` - Core features - lifecycle management, actor/work scheduler, etc.
+  + ~~[`0.2.0`][m1] - Spawn actors, send and receive messages~~ (shipped)
+  + [`0.3.0`][m2] - Ergonomics, observability, test support, docs
+  + [`0.4.0`][m3] - Actor utilities - routers, timers, ask-pattern, behaviors, etc.
+  + `0.5.0` - Core features - lifecycle management, actor/work scheduler, etc.
 
   [m1]: https://github.com/JohnMurray/busan/milestone/1
   [m2]: https://github.com/JohnMurray/busan/milestone/2
+  [m3]: https://github.com/JohnMurray/busan/milestone/3
 
 Beyond this, I don't have any defined plans. Things on my mind include:
 
@@ -51,7 +57,6 @@ Beyond this, I don't have any defined plans. Things on my mind include:
   + gRPC bridging (exposing a gRPC interface to communicate with actors)
   + Network bridging - a generic take on gRPC bridging that allows for arbitrary network protocols
   + DSL for one-off actor systems
-  + Observability - tracing, logging, metrics, etc.
   + State snapshotting/journaling, actor migration
   + Async IO and/or async/await support and/or Tower integration
 
@@ -64,5 +69,5 @@ also a personal experiment in how I think about and manage my open-source projec
 
 I'm not currently considering code contributions at the moment as the project is still in its infancy,
 and I'm still working out the design. However, I am open to suggestions and feedback. If you have any
-ideas or suggestions, please open an issue for discussion. I'd also be interested in hearing about
+ideas or suggestions, please start a discussion. I'd also be interested in hearing about
 real-world use-cases that are not well-supported by other Rust-based actor implementations.
