@@ -1,8 +1,14 @@
+//! Utilities useful for extending Busan
+//!
+//! The CommandChannel is a wrapper around channels that provides a simple interface for an
+//! unbounded channel. This is mostly used internally, but is exposed for use in any extension
+//! points within busan and the execution model is guaranteed to work with the underlying channel
+//! implementation.
+
 use crossbeam_channel::{Receiver, Sender};
 
-/// A simple wrapper around channels to abstract out the specific channel implementation
-/// being used for sending and receiving. This ideally should be the only module that
-/// import anything from crossbeam_channel.
+/// A simple wrapper for sending and receiving objects/commands over a channel. This object
+/// represents both a sender and receiver for a channel.
 pub struct CommandChannel<T> {
     pub(self) sender: Sender<T>,
     pub(self) receiver: Receiver<T>,
@@ -14,10 +20,12 @@ impl<T> CommandChannel<T> {
         CommandChannel { sender, receiver }
     }
 
+    // TODO: Wrap the error type to avoid exposing the underlying channel implementation
     pub fn send(&self, command: T) -> Result<(), crossbeam_channel::SendError<T>> {
         self.sender.send(command)
     }
 
+    // TODO: Wrap the error type to avoid exposing the underlying channel implementation
     pub fn recv(&self) -> Result<T, crossbeam_channel::RecvError> {
         self.receiver.recv()
     }
