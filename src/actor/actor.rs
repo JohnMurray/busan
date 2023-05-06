@@ -4,7 +4,12 @@ use crate::system::RuntimeManagerRef;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
 
+/// Trait that defines the behavior of an actor. This is the primary interface that must be
+/// implemented when defining an actor.
 pub trait Actor: Send {
+    /// Hook called before any messages are received and after the actor has been initialized
+    /// and assigned to an executor. This is useful for performing any initialization that
+    /// requires the actor to be running.
     fn before_start(&mut self, _ctx: Context) {}
 
     /// A receive for unhandled messages. Since message sending is untyped on the sender side,
@@ -23,6 +28,8 @@ pub trait Actor: Send {
         );
     }
 
+    /// Receive a message. This is the primary method for handling messages and is called
+    /// for every message received by the actor.
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>);
 }
 
@@ -37,8 +44,10 @@ pub trait ActorInit {
         Self: Sized + Actor;
 }
 
-/// ActorCell is the wrapper to the user-defined actor, wrapping the mailbox parent references,
-/// and other actor-related information that is useful internally.
+/// [`ActorCell`] is the wrapper to the user-defined actor, wrapping the mailbox parent references,
+/// and other actor-related information that is useful internally. This is primarily an internal
+/// interface, but is exposed for user-provided executors or extensions.
+/// <!-- TODO: Is this actually useful for extension or does it need to be opened up more? -->
 pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
     pub(crate) mailbox: Receiver<Letter>,
@@ -64,6 +73,7 @@ impl ActorCell {
     }
 }
 
+#[doc(hidden)]
 macro_rules! debug_serialize_msg {
     ($msg:expr, $T:tt) => {
         if cfg!(debug_assertions) {
@@ -76,7 +86,7 @@ macro_rules! debug_serialize_msg {
 }
 
 /// Actor context object used for performing actions that interact with the running
-/// actor-system, such as spawning new actors.
+/// actor-system, such as spawning new actors and sending messages.
 pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
@@ -86,8 +96,16 @@ pub struct Context<'a> {
 }
 
 impl Context<'_> {
-    /// Create a new (child) actor. Note that this may be a delayed action and the actor
-    /// may not be created immediately.
+    /// Create a new (child) actor.
+    ///
+    /// This method will create a new actor instance and coordinate with the runtime manager to
+    /// schedule the actor (on an executor). The address returned can be used to immediately send
+    /// messages.
+    ///
+    /// __Important Note__ \
+    /// Sending a message to an actor requires "resolving" the address. This is a blocking call
+    /// to the runtime manager. Immediately creating and then sending a message to a child actor
+    /// may result in a small amount of waiting. This should be avoided if possible.
     pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
         &mut self,
         name: &str,
@@ -103,6 +121,8 @@ impl Context<'_> {
         address
     }
 
+    // TODO: Document
+    // TODO: Talkabout the debug_serialize_msg! in the docs
     pub fn send_message<M: Message + Default + 'static, T: ToMessage<M>>(
         &self,
         addr: &ActorAddress,
@@ -132,6 +152,10 @@ impl Context<'_> {
         addr.send(Some(self.address.clone()), Box::new(message));
     }
 
+    /// Get the sender of the current message.
+    ///
+    /// __Note:__ If the message is a system message, there is no defined sender and this method
+    /// will panic.
     pub fn sender(&self) -> &'_ ActorAddress {
         match self.sender {
             SenderType::Actor(sender_address) => sender_address,
@@ -148,7 +172,14 @@ impl Context<'_> {
         }
     }
 
+    /// Return the addresses for all children of the current actor
     pub fn children(&self) -> &[ActorAddress] {
         self.children
+    }
+
+    /// Return the address for the parent of the current actor. This will only return `None`
+    /// for the root actor.
+    pub fn parent(&self) -> Option<&ActorAddress> {
+        self.parent.as_ref()
     }
 }
