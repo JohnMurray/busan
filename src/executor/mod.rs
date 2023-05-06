@@ -1,3 +1,5 @@
+//! Runtime executor implementations for actors
+
 pub(crate) mod thread_executor;
 
 use crate::actor::ActorCell;

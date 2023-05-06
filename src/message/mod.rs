@@ -1,3 +1,5 @@
+//! Core message types used by Busan and primitive type wrappers
+
 pub mod common_types;
 
 pub trait Message: prost::Message {
