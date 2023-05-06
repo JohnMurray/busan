@@ -1,3 +1,5 @@
+//! Configuration structs for [`ActorSystem`](crate::ActorSystem) creation
+
 use num_cpus;
 
 /// Configuration struct for an ActorSystem.

@@ -4,6 +4,7 @@ use log::trace;
 use std::cell::RefCell;
 use std::fmt::{Display, Formatter};
 
+/// Handle representing the address of an actor
 #[derive(Debug)]
 pub struct ActorAddress {
     pub(crate) uri: Uri,
@@ -30,6 +31,11 @@ impl Clone for ActorAddress {
 }
 
 impl ActorAddress {
+    /// Get the [`Uri`] of the actor address (e.g. `local://root/child-1/child-2`)
+    pub fn uri(&self) -> Uri {
+        self.uri.clone()
+    }
+
     pub(crate) fn new_child(parent: &ActorAddress, name: &str, id: usize) -> Self {
         Self {
             uri: parent.uri.new_child(&format!("{}-{}", name, id)),
@@ -77,11 +83,12 @@ impl ActorAddress {
 /// `UriScheme` is the transport mechanism for messages sent between actor systems. Messages
 /// that stay within the current actor system will all have a `Local` scheme.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum UriScheme {
+pub(crate) enum UriScheme {
     /// `Local` is the default scheme for messages that stay within the current actor system.
     Local,
 
     /// `Remote` is currently a placeholder value since remote is not currently implemented.
+    #[allow(dead_code)]
     Remote,
 }
 
@@ -103,8 +110,6 @@ pub enum UriScheme {
 ///     ├── database                 local://geoip_updater/download_manager/publisher/database
 ///     └── event_emitter            local://geoip_updater/download_manager/publisher/event_emitter
 /// ```
-/// Because of this property, `Uri` has additional methods for creating child `Uri`s, parent
-/// `Uri`s or identifying the relationship between two `Uri`s.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Uri {
     scheme: UriScheme,
