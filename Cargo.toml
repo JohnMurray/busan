@@ -13,10 +13,9 @@ readme = "README.md"
 description = "An actor implementation for Rust"
 homepage = "https://github.com/JohnMurray/busan"
 repository = "https://github.com/JohnMurray/busan"
-keywords = ["actor", "actors", "actor-system", "concurrent", "concurrency", "actor-model"]
+keywords = ["actor", "actor-system", "concurrent", "concurrency", "actor-model"]
 categories = ["asynchronous", "concurrency"]
 license = "GPL-3.0"
-license-file = "LICENSE"
 
 [workspace]
 members = [
