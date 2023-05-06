@@ -8,12 +8,15 @@ use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::util::CommandChannel;
 use crate::{actor, config};
 
-/// ActorSystem is a user-facing handle/abstraction for the actor system. It exposes an
-/// interface for creating the system, spawning the root actor, and shutting down or awaiting
-/// shutdown of te system.
+/// `ActorSystem`is the top-level handle for an actor system.
 ///
-/// Once the ActorSystem is initialized through the `init()` function, control and management
-/// of the executors and actors is delegated to the RuntimeManager.
+/// It is both the entrypoint for creating a new actor system (via [`init`](ActorSystem::init) and
+/// [`spawn_root_actor`](ActorSystem::spawn_root_actor)) and also the handle used to wait for the
+/// system to complete or to initiate a shutdown ([`await_shutdown`](ActorSystem::await_shutdown)
+/// and [`shutdown`](ActorSystem::shutdown), respectively).
+///
+/// Once the ActorSystem is initialized through [`init`](ActorSystem::init), control and management
+/// of the executors and actors is delegated to a runtime management thread.
 pub struct ActorSystem {
     executors: HashMap<String, ExecutorHandle>,
     runtime_manager: RuntimeManagerRef,
@@ -22,9 +25,29 @@ pub struct ActorSystem {
 }
 
 impl ActorSystem {
-    /// Initialize the actor system. This function will spawn the executors and the runtime
-    /// manager. The returned ActorSystem may be used to spawn the root actor and to eventually
-    /// either await shutdown or shutdown the system.
+    /// Initialize (and start) a new actor system. This will start up the runtime management thread
+    /// and spawn executors for running actor-related actions. The nature and number of executors
+    /// and other behaviors will be determined by the provided `config`.
+    ///
+    /// ```rust
+    /// # use busan::message::common_types::StringWrapper;
+    /// # use busan::message::ToMessage;
+    /// # use busan::prelude::*;
+    /// # struct GreetActor{value: String}
+    /// # impl Actor for GreetActor {
+    /// #     fn before_start(&mut self, _ctx: Context) { println!("Hello {}", self.value); }
+    /// #     fn receive(&mut self, _ctx: Context, _msg: Box<dyn Message>) { println!("Hello {}", self.value); }
+    /// # }
+    /// # impl ActorInit for GreetActor{
+    /// #     type Init = StringWrapper;
+    /// #     fn init(init_msg: &StringWrapper) -> Self { GreetActor{ value: init_msg.value.clone()} }
+    /// # }
+    /// fn main() {
+    ///   let mut system = ActorSystem::init(ActorSystemConfig::default());
+    ///   system.spawn_root_actor::<_, GreetActor>("greet-actor", &"World".to_message());
+    ///   system.shutdown();
+    /// }
+    /// ```
     pub fn init(config: config::ActorSystemConfig) -> ActorSystem {
         config.validate().unwrap();
 
