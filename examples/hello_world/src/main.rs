@@ -15,7 +15,7 @@ fn main() {
     let init = Init {
         greeting: "Hi there!".to_string(),
     };
-    system.spawn_root_actor::<_, Greet>("greeter", &init);
+    system.spawn_root_actor::<Greet, _, _>("greeter", init);
 
     thread::sleep(std::time::Duration::from_secs(1));
     system.shutdown();
@@ -28,7 +28,7 @@ struct Greet {
 impl ActorInit for Greet {
     type Init = Init;
 
-    fn init(init_msg: &Self::Init) -> Self {
+    fn init(init_msg: Self::Init) -> Self {
         println!("spawning greet actor");
         Greet {
             greeting: init_msg.greeting.clone(),

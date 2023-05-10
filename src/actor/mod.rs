@@ -50,7 +50,7 @@
 //!
 //! impl ActorInit for Greeter {
 //!   type Init = GreeterInit;
-//!   fn init(init_msg: &Self::Init) -> Self {
+//!   fn init(init_msg: Self::Init) -> Self {
 //!     let mut phrase = init_msg.phrase.clone();
 //!     if phrase.is_empty() {
 //!       phrase = "Hello".to_string();
