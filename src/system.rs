@@ -42,11 +42,11 @@ impl ActorSystem {
     /// # }
     /// # impl ActorInit for GreetActor{
     /// #     type Init = StringWrapper;
-    /// #     fn init(init_msg: &StringWrapper) -> Self { GreetActor{ value: init_msg.value.clone()} }
+    /// #     fn init(init_msg: StringWrapper) -> Self { GreetActor{ value: init_msg.value.clone()} }
     /// # }
     /// fn main() {
     ///   let mut system = ActorSystem::init(ActorSystemConfig::default());
-    ///   system.spawn_root_actor::<_, GreetActor>("greet-actor", &"World".to_message());
+    ///   system.spawn_root_actor::<GreetActor, _, _>("greet-actor", "World");
     ///   system.shutdown();
     /// }
     /// ```
