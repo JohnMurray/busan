@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message ActorAddress {
+  enum Scheme {
+    LOCAL = 0;
+
+    // Remote is currently a placeholder for future use.
+    // See busan::actor::address::UriScheme
+    REMOTE = 1;
+  }
+
+  Scheme scheme = 1;
+  string path = 2;
+}
