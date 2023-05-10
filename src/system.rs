@@ -5,6 +5,8 @@ use std::thread;
 
 use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Letter, Uri};
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
+use crate::message::ToMessage;
+use crate::prelude::Message;
 use crate::util::CommandChannel;
 use crate::{actor, config};
 
@@ -40,11 +42,11 @@ impl ActorSystem {
     /// # }
     /// # impl ActorInit for GreetActor{
     /// #     type Init = StringWrapper;
-    /// #     fn init(init_msg: &StringWrapper) -> Self { GreetActor{ value: init_msg.value.clone()} }
+    /// #     fn init(init_msg: StringWrapper) -> Self { GreetActor{ value: init_msg.value.clone()} }
     /// # }
     /// fn main() {
     ///   let mut system = ActorSystem::init(ActorSystemConfig::default());
-    ///   system.spawn_root_actor::<_, GreetActor>("greet-actor", &"World".to_message());
+    ///   system.spawn_root_actor::<GreetActor, _, _>("greet-actor", "World");
     ///   system.shutdown();
     /// }
     /// ```
@@ -86,10 +88,14 @@ impl ActorSystem {
     /// of the actor hierarchy and all other actors must be created from here. Note that
     /// there may only be a single root actor per system and can, in some ways, be considered
     /// the "main" function of the actor system.
-    pub fn spawn_root_actor<B, A: ActorInit<Init = B> + Actor + 'static>(
+    pub fn spawn_root_actor<
+        A: ActorInit<Init = M> + Actor + 'static,
+        T: ToMessage<M>,
+        M: Message,
+    >(
         &mut self,
         name: &str,
-        init_msg: &B,
+        init_msg: T,
     ) {
         debug_assert!(
             !self.executors.is_empty(),
@@ -99,7 +105,7 @@ impl ActorSystem {
 
         self.root_actor_assigned = true;
         self.runtime_manager.assign_actor(
-            Box::new(A::init(init_msg)),
+            Box::new(A::init(init_msg.to_message())),
             ActorAddress::new_root(name),
             None,
         );
