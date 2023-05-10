@@ -11,7 +11,7 @@ struct Pong {}
 impl ActorInit for Ping {
     type Init = I32Wrapper;
 
-    fn init(_init_msg: &Self::Init) -> Self
+    fn init(_init_msg: Self::Init) -> Self
     where
         Self: Sized + Actor,
     {
@@ -23,7 +23,7 @@ impl ActorInit for Ping {
 impl ActorInit for Pong {
     type Init = I32Wrapper;
 
-    fn init(_init_msg: &Self::Init) -> Self
+    fn init(_init_msg: Self::Init) -> Self
     where
         Self: Sized + Actor,
     {
@@ -34,7 +34,7 @@ impl ActorInit for Pong {
 
 impl Actor for Ping {
     fn before_start(&mut self, mut ctx: Context) {
-        let pong_addr = Some(ctx.spawn_child::<_, Pong>("pong", &I32Wrapper::default()));
+        let pong_addr = Some(ctx.spawn_child::<Pong, _, _>("pong", 0));
         ctx.send_message(pong_addr.as_ref().unwrap(), "ping");
     }
 
@@ -62,7 +62,7 @@ fn main() {
         .init();
 
     let mut system = ActorSystem::init(ActorSystemConfig::default());
-    system.spawn_root_actor::<_, Ping>("ping", &I32Wrapper::default());
+    system.spawn_root_actor::<Ping, _, _>("ping", 0);
 
     thread::sleep(std::time::Duration::from_secs(1));
     system.shutdown();

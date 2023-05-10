@@ -39,7 +39,7 @@ pub trait Actor: Send {
 pub trait ActorInit {
     type Init: Message;
 
-    fn init(init_msg: &Self::Init) -> Self
+    fn init(init_msg: Self::Init) -> Self
     where
         Self: Sized + Actor;
 }
@@ -106,15 +106,15 @@ impl Context<'_> {
     /// Sending a message to an actor requires "resolving" the address. This is a blocking call
     /// to the runtime manager. Immediately creating and then sending a message to a child actor
     /// may result in a small amount of waiting. This should be avoided if possible.
-    pub fn spawn_child<B, A: ActorInit<Init = B> + Actor + 'static>(
+    pub fn spawn_child<A: ActorInit<Init = M> + Actor + 'static, T: ToMessage<M>, M: Message>(
         &mut self,
         name: &str,
-        init_msg: &B,
+        init_msg: T,
     ) -> ActorAddress {
         let address = ActorAddress::new_child(self.address, name, self.children.len());
         self.children.push(address.clone());
         self.runtime_manager.assign_actor(
-            Box::new(A::init(init_msg)),
+            Box::new(A::init(init_msg.to_message())),
             address.clone(),
             Some(self.address.clone()),
         );
