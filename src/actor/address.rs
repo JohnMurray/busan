@@ -112,8 +112,8 @@ pub(crate) enum UriScheme {
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Uri {
-    scheme: UriScheme,
-    path_segments: Vec<String>,
+    pub(crate) scheme: UriScheme,
+    pub(crate) path_segments: Vec<String>,
 }
 
 impl Uri {
@@ -159,6 +159,10 @@ impl Uri {
     // Returns true if `Self` is the direct child of `maybe_parent`.
     fn is_parent(&self, maybe_parent: &Self) -> bool {
         maybe_parent.is_child(self)
+    }
+
+    pub(crate) fn path(&self) -> String {
+        self.path_segments.join("/")
     }
 }
 
