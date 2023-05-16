@@ -25,12 +25,12 @@ it usable to build hobby/personal projects on.
 
 ## Documentation
 
-The project lacks comprehensive documentation at this time, however I am experimenting with [decision
-logs][decision-log-url] as a way to document and communicate the major design decisions that were
-made.
+The project lacks comprehensive documentation or getting started guides at this time. The best
+source of documentation will be found in the rustdocs at [docs.rs][docs-rs-busan] and in the
+[examples folder][examples-url].
 
-Of course the source code is also lightly documented and available at [docs.rs][docs-rs-busan]
-and there are fully functional examples available in the [examples folder][examples-url].
+If you are interested in additional context behind the project or technical decisions, then the
+[decision logs][decision-log-url] may be of particular interest.
 
   [docs-rs-busan]: https://docs.rs/busan/latest/busan/
   [examples-url]: https://github.com/JohnMurray/busan/blob/main/examples/
