@@ -71,3 +71,11 @@ I'm not currently considering code contributions at the moment as the project is
 and I'm still working out the design. However, I am open to suggestions and feedback. If you have any
 ideas or suggestions, please start a discussion. I'd also be interested in hearing about
 real-world use-cases that are not well-supported by other Rust-based actor implementations.
+
+## Licensing
+
+The project is currently licensed under the [GNU GPL v3][license] license. My intention is to
+ensure all early work and development on this project is kept open. I may revisit this if there
+is significant commercial interest.
+
+  [license]: https://github.com/JohnMurray/busan/blob/main/LICENSE
