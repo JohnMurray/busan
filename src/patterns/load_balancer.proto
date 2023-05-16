@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package patterns.load_balancer;
+
+import "actor/address.proto";
+
+message Init {
+  actor.proto.AddressList nodes = 1;
+  Strategy strategy = 2;
+}
+
+enum Strategy {
+  ROUND_ROBIN = 0;
+  RANDOM = 1;
+}

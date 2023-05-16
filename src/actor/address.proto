@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package actor.address;
+package actor.proto;
 
 enum Scheme {
   LOCAL = 0;
