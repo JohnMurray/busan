@@ -25,15 +25,28 @@ it usable to build hobby/personal projects on.
 
 ## Documentation
 
-The project lacks comprehensive documentation at this time, however I am experimenting with [decision
-logs][decision-log-url] as a way to document and communicate the major design decisions that were
-made.
+The project lacks comprehensive documentation or getting started guides at this time. The best
+source of documentation will be found in the rustdocs at [docs.rs][docs-rs-busan] and in the
+[examples folder][examples-url].
 
-Of course the source code is also lightly documented and available at [docs.rs][docs-rs-busan]
-and there are fully functional examples available in the [examples folder][examples-url].
+If you are interested in additional context behind the project or technical decisions, then the
+[decision logs][decision-log-url] may be of particular interest.
 
   [docs-rs-busan]: https://docs.rs/busan/latest/busan/
   [examples-url]: https://github.com/JohnMurray/busan/blob/main/examples/
+
+### Examples
+
+You can run the examples by specifying the workspace (directory) name, prefixed with `examples_`.
+
+```shell
+# Run the current examples
+$ cargo run -p examples_ping_pong
+$ cargo run -p examples_hello_world
+
+# Trick the cargo run command into listing our example workspaces
+$ cargo run -p 2>&1 | grep 'examples_' 
+```
 
 ## Roadmap
 
@@ -71,3 +84,11 @@ I'm not currently considering code contributions at the moment as the project is
 and I'm still working out the design. However, I am open to suggestions and feedback. If you have any
 ideas or suggestions, please start a discussion. I'd also be interested in hearing about
 real-world use-cases that are not well-supported by other Rust-based actor implementations.
+
+## Licensing
+
+The project is currently licensed under the [GNU GPL v3][license] license. My intention is to
+ensure all early work and development on this project is kept open. I may revisit this if there
+is significant commercial interest.
+
+  [license]: https://github.com/JohnMurray/busan/blob/main/LICENSE
