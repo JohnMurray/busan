@@ -35,6 +35,19 @@ If you are interested in additional context behind the project or technical deci
   [docs-rs-busan]: https://docs.rs/busan/latest/busan/
   [examples-url]: https://github.com/JohnMurray/busan/blob/main/examples/
 
+### Examples
+
+You can run the examples by specifying the workspace (directory) name, prefixed with `examples_`.
+
+```shell
+# Run the current examples
+$ cargo run -p examples_ping_pong
+$ cargo run -p examples_hello_world
+
+# Trick the cargo run command into listing our example workspaces
+$ cargo run -p 2>&1 | grep 'examples_' 
+```
+
 ## Roadmap
 
 The roadmap is constantly evolving, so I don't expect plans to be super detailed outside
