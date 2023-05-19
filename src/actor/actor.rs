@@ -123,7 +123,7 @@ impl Context<'_> {
 
     // TODO: Document
     // TODO: Talk about the debug_serialize_msg! in the docs
-    pub fn send_message<M: Message + Default + 'static, T: ToMessage<M>>(
+    pub fn send<M: Message + Default + 'static, T: ToMessage<M>>(
         &self,
         addr: &ActorAddress,
         message: T,
