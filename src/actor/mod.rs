@@ -90,6 +90,8 @@ pub mod address;
 #[doc(hidden)]
 pub mod letter;
 
+pub mod proto;
+
 #[doc(inline)]
 pub use actor::*;
 #[doc(inline)]

@@ -1,3 +1,4 @@
+use crate::actor::proto::Scheme;
 use crate::actor::{Letter, Mailbox};
 use crate::message::Message;
 use log::trace;
@@ -45,7 +46,7 @@ impl ActorAddress {
 
     pub(crate) fn new_root(name: &str) -> Self {
         Self {
-            uri: Uri::new(UriScheme::Local, &[name]),
+            uri: Uri::new(Scheme::Local, &[name]),
             mailbox: RefCell::new(None),
         }
     }
@@ -80,18 +81,6 @@ impl ActorAddress {
     }
 }
 
-/// `UriScheme` is the transport mechanism for messages sent between actor systems. Messages
-/// that stay within the current actor system will all have a `Local` scheme.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum UriScheme {
-    /// `Local` is the default scheme for messages that stay within the current actor system.
-    Local,
-
-    /// `Remote` is currently a placeholder value since remote is not currently implemented.
-    #[allow(dead_code)]
-    Remote,
-}
-
 /// `Uri` is a URI-like type that identifies an actor system and an actor within that system.
 /// The hierarchical nature, or tree-like, organization of actors is also present in URIs, with
 /// children and parents readily identifiable by path. Take for example the following hierarchy
@@ -112,12 +101,12 @@ pub(crate) enum UriScheme {
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Uri {
-    scheme: UriScheme,
-    path_segments: Vec<String>,
+    pub(crate) scheme: Scheme,
+    pub(crate) path_segments: Vec<String>,
 }
 
 impl Uri {
-    fn new(scheme: UriScheme, path_segments: &[&str]) -> Self {
+    fn new(scheme: Scheme, path_segments: &[&str]) -> Self {
         if path_segments.is_empty() {
             panic!("Uri must have at least one path segment");
         }
@@ -160,13 +149,18 @@ impl Uri {
     fn is_parent(&self, maybe_parent: &Self) -> bool {
         maybe_parent.is_child(self)
     }
+
+    /// Return the path component of the [`Uri`] as a string.
+    pub(crate) fn path(&self) -> String {
+        self.path_segments.join("/")
+    }
 }
 
 impl Display for Uri {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.scheme {
-            UriScheme::Local => write!(f, "local://")?,
-            UriScheme::Remote => write!(f, "remote://")?,
+            Scheme::Local => write!(f, "local://")?,
+            Scheme::Remote => write!(f, "remote://")?,
         }
         write!(f, "{}", self.path_segments.join("/"))
     }
@@ -180,13 +174,13 @@ mod tests {
     #[should_panic]
     fn test_construction() {
         // Test that an empty path is not allowed
-        Uri::new(UriScheme::Local, &[]);
+        Uri::new(Scheme::Local, &[]);
     }
 
     #[test]
     fn test_child_construction() {
         // Create a child from a root path
-        let root = Uri::new(UriScheme::Local, &["root"]);
+        let root = Uri::new(Scheme::Local, &["root"]);
         let child = root.new_child("child");
 
         // Test the relationships between the two
@@ -207,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_self_reference() {
-        let path = Uri::new(UriScheme::Local, &["root", "some", "path"]);
+        let path = Uri::new(Scheme::Local, &["root", "some", "path"]);
         assert_eq!(path.is_child(&path), false);
         assert_eq!(path.is_parent(&path), false);
     }
@@ -258,7 +252,7 @@ mod tests {
             ),
         ];
         for (path_segments, expected) in test_cases {
-            let uri = Uri::new(UriScheme::Local, &path_segments);
+            let uri = Uri::new(Scheme::Local, &path_segments);
             assert_eq!(uri.to_string(), expected);
         }
     }
