@@ -1,6 +1,5 @@
 //! Core message types used by Busan and primitive type wrappers
 
-use prost::DecodeError;
 use std::any::Any;
 
 pub mod common_types;
@@ -17,7 +16,7 @@ pub trait Message: prost::Message {
 
     /// A version of merge that does not have a [`Sized`] requirement
     #[doc(hidden)]
-    fn merge2(&mut self, buf: &[u8]) -> Result<(), DecodeError>;
+    fn merge2(&mut self, buf: &[u8]) -> Result<(), prost::DecodeError>;
 
     #[doc(hidden)]
     fn encoded_len(&self) -> usize {
@@ -35,7 +34,7 @@ where
     fn encode_to_vec2(&self) -> Vec<u8> {
         (**self).encode_to_vec2()
     }
-    fn merge2(&mut self, buf: &[u8]) -> Result<(), DecodeError> {
+    fn merge2(&mut self, buf: &[u8]) -> Result<(), prost::DecodeError> {
         (**self).merge2(buf)
     }
     fn encoded_len(&self) -> usize {

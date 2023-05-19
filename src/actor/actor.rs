@@ -73,6 +73,10 @@ impl ActorCell {
     }
 }
 
+/// Debug macro for serializing and deserializing a message. The goal is to reduce
+/// (or protect against) accidental state sharing on sent messages. Since the goal
+/// is to support location transparency, it's beneficial to ensure state sharing
+/// does not become part of the relied-upon behavior of an actor.
 #[doc(hidden)]
 macro_rules! debug_serialize_msg {
     ($msg:expr) => {
