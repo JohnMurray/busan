@@ -12,6 +12,10 @@ pub trait Message: prost::Message {
     #[doc(hidden)]
     fn encode_to_vec2(&self) -> Vec<u8>;
 
+    /// A version of merge that does not have a [`Sized`] requirement
+    #[doc(hidden)]
+    fn merge2(&mut self, buf: &[u8]) -> Result<(), prost::DecodeError>;
+
     #[doc(hidden)]
     fn encoded_len(&self) -> usize {
         prost::Message::encoded_len(self)

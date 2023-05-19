@@ -18,6 +18,10 @@ pub fn message(input: TokenStream) -> TokenStream {
             fn encode_to_vec2(&self) -> Vec<u8> {
                 prost::Message::encode_to_vec(self)
             }
+
+            fn merge2(&mut self, bytes: &[u8]) -> Result<(), prost::DecodeError> {
+                prost::Message::merge(self, bytes)
+            }
         }
     };
 
