@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package patterns.load_balancer;
+package patterns.load_balancer.proto;
 
 import "actor/address.proto";
 

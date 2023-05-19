@@ -35,14 +35,14 @@ impl ActorInit for Pong {
 impl Actor for Ping {
     fn before_start(&mut self, mut ctx: Context) {
         let pong_addr = Some(ctx.spawn_child::<Pong, _, _>("pong", 0));
-        ctx.send_message(pong_addr.as_ref().unwrap(), "ping");
+        ctx.send(pong_addr.as_ref().unwrap(), "ping");
     }
 
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
         // Print the message and respond with a "ping"
         if let Some(str_msg) = msg.as_any().downcast_ref::<StringWrapper>() {
             println!("received message: {}", str_msg.value);
-            ctx.send_message(ctx.sender(), "ping");
+            ctx.send(ctx.sender(), "ping");
         }
     }
 }
@@ -51,7 +51,7 @@ impl Actor for Pong {
         // Print the message and respond with a "pong"
         if let Some(str_msg) = msg.as_any().downcast_ref::<StringWrapper>() {
             println!("received message: {}", str_msg.value);
-            ctx.send_message(ctx.sender(), "pong");
+            ctx.send(ctx.sender(), "pong");
         }
     }
 }

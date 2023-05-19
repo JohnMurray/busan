@@ -21,6 +21,7 @@ license = "GPL-3.0"
 members = [
     "busan-derive",
 
+    "examples/greet_machine",
     "examples/hello_world",
     "examples/ping_pong",
 ]

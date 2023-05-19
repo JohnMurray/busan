@@ -75,10 +75,11 @@ impl ActorCell {
 
 #[doc(hidden)]
 macro_rules! debug_serialize_msg {
-    ($msg:expr, $T:tt) => {
+    ($msg:expr) => {
         if cfg!(debug_assertions) {
             let bytes = $msg.encode_to_vec2();
-            $T::decode(bytes.as_slice()).unwrap()
+            $msg.merge2(bytes.as_slice()).unwrap();
+            $msg
         } else {
             $msg
         }
@@ -122,12 +123,8 @@ impl Context<'_> {
     }
 
     // TODO: Document
-    // TODO: Talk about the debug_serialize_msg! in the docs
-    pub fn send_message<M: Message + Default + 'static, T: ToMessage<M>>(
-        &self,
-        addr: &ActorAddress,
-        message: T,
-    ) {
+    // TODO: Coordinate documentation with `send` method
+    pub fn send_message(&self, addr: &ActorAddress, mut message: Box<dyn Message>) {
         // Validate that the address is resolved (this is a blocking call to the runtime
         // manager if unresolved).
         if !addr.is_resolved() {
@@ -146,10 +143,17 @@ impl Context<'_> {
         // forwarded to the dead letter queue.
         debug_assert!(addr.is_resolved(), "Address {} is not resolved", addr);
 
-        let message = debug_serialize_msg!(message.to_message(), M);
+        let message = debug_serialize_msg!(message);
 
         // Send the message to the resolved address
-        addr.send(Some(self.address.clone()), Box::new(message));
+        addr.send(Some(self.address.clone()), message);
+    }
+
+    // TODO: Document
+    // TODO: Talk about the debug_serialize_msg! in the docs
+    pub fn send<M: Message + 'static, T: ToMessage<M>>(&self, addr: &ActorAddress, message: T) {
+        let message = message.to_message();
+        self.send_message(addr, Box::new(message));
     }
 
     /// Get the sender of the current message.

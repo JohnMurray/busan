@@ -11,7 +11,7 @@ use crate::message::{Message, ToMessage};
 use std::cell::RefCell;
 
 // Import the generated protobuf definitions (see build.rs)
-include!(concat!(env!("OUT_DIR"), "/actor.address.rs"));
+include!(concat!(env!("OUT_DIR"), "/actor.proto.rs"));
 
 impl_busan_message!(ActorAddress);
 impl_busan_message!(AddressList);

@@ -1,5 +1,8 @@
 //! Core message types used by Busan and primitive type wrappers
 
+use prost::DecodeError;
+use std::any::Any;
+
 pub mod common_types;
 
 pub trait Message: prost::Message {
@@ -12,9 +15,31 @@ pub trait Message: prost::Message {
     #[doc(hidden)]
     fn encode_to_vec2(&self) -> Vec<u8>;
 
+    /// A version of merge that does not have a [`Sized`] requirement
+    #[doc(hidden)]
+    fn merge2(&mut self, buf: &[u8]) -> Result<(), DecodeError>;
+
     #[doc(hidden)]
     fn encoded_len(&self) -> usize {
         prost::Message::encoded_len(self)
+    }
+}
+
+impl<M> Message for Box<M>
+where
+    M: Message,
+{
+    fn as_any(&self) -> &dyn Any {
+        (**self).as_any()
+    }
+    fn encode_to_vec2(&self) -> Vec<u8> {
+        (**self).encode_to_vec2()
+    }
+    fn merge2(&mut self, buf: &[u8]) -> Result<(), DecodeError> {
+        (**self).merge2(buf)
+    }
+    fn encoded_len(&self) -> usize {
+        prost::Message::encoded_len(&**self)
     }
 }
 
