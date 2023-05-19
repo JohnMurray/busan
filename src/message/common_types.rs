@@ -118,6 +118,7 @@ macro_rules! impl_busan_message {
         }
     };
 }
+pub(crate) use impl_busan_message;
 
 impl_busan_message!(U32Wrapper);
 impl_busan_message!(U64Wrapper);

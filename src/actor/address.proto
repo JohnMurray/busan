@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package actor.proto;
+
+enum Scheme {
+  LOCAL = 0;
+
+  // Remote is currently a placeholder for future use.
+  // See busan::actor::address::UriScheme
+  REMOTE = 1;
+}
+
+// ActorAddress is the serializable representation of an actor address. It can be used
+// to send an address to another actor for the purpose of discovery and message routing.
+message ActorAddress {
+  Scheme scheme = 1;
+  string path = 2;
+}
+
+// AddressList is a simple container for holding a list of ActorAddress messages.
+// This allows for multiple addresses to be sent as a single message from/to an actor.
+message AddressList {
+  repeated ActorAddress addresses = 1;
+}
