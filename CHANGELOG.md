@@ -1,6 +1,9 @@
 ## WIP (unreleased)
 
   + Added debug serialization macro (`debug_serialize_msg!`) for all sent messages
+  + Support `ToMessage` in actor-spawn methods - #62
+  + `Context::send` now sends `ToMessage` objects and `Context::send_message` sends `Box<Message>` - #66
+  + `Message` support for `ActorAddress` so they can be shared between actors - #67
 
 ## 0.1.2 through 0.2.0
 
