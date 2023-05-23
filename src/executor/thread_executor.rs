@@ -78,11 +78,27 @@ impl Executor for ThreadExecutor {
                         cell.actor.before_start(Context {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
+                            executor_channel: &self.command_channel,
                             parent: &cell.parent,
                             children: &mut cell.children,
                             sender: &SenderType::System,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
+                    }
+                    ExecutorCommands::ShutdownActor(address) => {
+                        trace!("calling before_shutdown for actor {}", &address.uri);
+                        // TODO: Send the remaining messages in the mailbox to the dead letter queue
+                        // TODO: Figure out how to redirect all Sender<Letter> handles to the dead letter queue
+                        if let Some(mut cell) = self.actor_cells.remove(&address.uri) {
+                            cell.actor.before_shutdown(Context {
+                                address: &cell.address,
+                                runtime_manager: &self.runtime_manager,
+                                executor_channel: &self.command_channel,
+                                parent: &cell.parent,
+                                children: &mut cell.children,
+                                sender: &SenderType::System,
+                            });
+                        }
                     }
                     ExecutorCommands::Shutdown => {
                         info!("received shutdown command");
@@ -101,6 +117,7 @@ impl Executor for ThreadExecutor {
                             Context {
                                 address: &cell.address,
                                 runtime_manager: &self.runtime_manager,
+                                executor_channel: &self.command_channel,
                                 parent: &cell.parent,
                                 children: &mut cell.children,
                                 sender: &letter.sender,

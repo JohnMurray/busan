@@ -1,6 +1,8 @@
 use crate::actor::{ActorAddress, Letter, SenderType};
+use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
+use crate::util::CommandChannel;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
 
@@ -103,6 +105,7 @@ macro_rules! debug_serialize_msg {
 pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
+    pub(crate) executor_channel: &'a CommandChannel<ExecutorCommands>,
     pub(crate) parent: &'a Option<ActorAddress>,
     pub(crate) children: &'a mut Vec<ActorAddress>,
     pub(crate) sender: &'a SenderType,
@@ -197,5 +200,11 @@ impl Context<'_> {
     /// for the root actor.
     pub fn parent(&self) -> Option<&ActorAddress> {
         self.parent.as_ref()
+    }
+
+    pub fn shutdown(&self) {
+        self.executor_channel
+            .send(ExecutorCommands::ShutdownActor(self.address.clone()))
+            .unwrap();
     }
 }
