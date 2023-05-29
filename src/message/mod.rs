@@ -1,6 +1,7 @@
 //! Core message types used by Busan and primitive type wrappers
 
 pub mod common_types;
+pub mod system;
 
 pub trait Message: prost::Message {
     fn as_any(&self) -> &dyn std::any::Any;
@@ -19,6 +20,11 @@ pub trait Message: prost::Message {
     #[doc(hidden)]
     fn encoded_len(&self) -> usize {
         prost::Message::encoded_len(self)
+    }
+
+    #[doc(hidden)]
+    fn is_system_message(&self) -> bool {
+        false
     }
 }
 
