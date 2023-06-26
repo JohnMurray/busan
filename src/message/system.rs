@@ -3,7 +3,8 @@
 use prost::DecodeError;
 use std::any::Any;
 
-#[derive(prost::Message)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, prost::Message)]
 pub struct PoisonPill {}
 
 impl super::Message for PoisonPill {
@@ -19,7 +20,7 @@ impl super::Message for PoisonPill {
         prost::Message::merge(self, buf)
     }
 
-    fn is_system_message(&self) -> bool {
+    fn is_system_message(&self, _local: &super::private::Local) -> bool {
         true
     }
 }

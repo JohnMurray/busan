@@ -22,8 +22,11 @@ pub trait Message: prost::Message {
         prost::Message::encoded_len(self)
     }
 
+    /// Returns true if this message is a system message. This method takes a ref
+    /// to a private Local enum, which makes this callable _only_ from within the
+    /// busan crate and _not_ implementable outside of it.
     #[doc(hidden)]
-    fn is_system_message(&self) -> bool {
+    fn is_system_message(&self, _local: &private::Local) -> bool {
         false
     }
 }
@@ -49,7 +52,9 @@ impl<M: Message> ToMessage<M> for M {
  */
 pub(crate) mod private {
     #[doc(hidden)]
-    pub enum Local {}
+    pub enum Local {
+        Value,
+    }
     #[doc(hidden)]
     pub trait IsLocal {}
     impl IsLocal for Local {}
