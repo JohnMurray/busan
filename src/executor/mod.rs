@@ -2,13 +2,14 @@
 
 pub(crate) mod thread_executor;
 
-use crate::actor::ActorCell;
+use crate::actor::{ActorAddress, ActorCell};
 use crate::config::ExecutorType;
 use crate::system::RuntimeManagerRef;
 use crate::util::CommandChannel;
 
 pub enum ExecutorCommands {
     AssignActor(ActorCell),
+    ShutdownActor(ActorAddress),
     Shutdown,
 }
 
@@ -24,6 +25,8 @@ pub trait ExecutorFactory {
     ) -> ExecutorHandle;
 }
 
+/// Executor represents a runtime responsible for processing messages on actors and handling
+/// messages received from the command channel.
 pub trait Executor {
     fn run(self);
 }

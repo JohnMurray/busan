@@ -1,6 +1,8 @@
 use crate::actor::{ActorAddress, Letter, SenderType};
+use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
+use crate::util::CommandChannel;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
 
@@ -31,6 +33,14 @@ pub trait Actor: Send {
     /// Receive a message. This is the primary method for handling messages and is called
     /// for every message received by the actor.
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>);
+
+    /// Hook called after all messages have been received and processed and before the actor is
+    /// removed fom the executor. This is useful for performing any cleanup that requires the
+    /// actor to be running.
+    ///
+    /// Any messages sent to this actor after this method is called will be sent to the dead-letter
+    /// queue.
+    fn before_shutdown(&mut self, _ctx: Context) {}
 }
 
 /// ActorInit defines a method of construction for an actor that takes an initialization
@@ -95,6 +105,7 @@ macro_rules! debug_serialize_msg {
 pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
+    pub(crate) executor_channel: &'a CommandChannel<ExecutorCommands>,
     pub(crate) parent: &'a Option<ActorAddress>,
     pub(crate) children: &'a mut Vec<ActorAddress>,
     pub(crate) sender: &'a SenderType,
@@ -189,5 +200,11 @@ impl Context<'_> {
     /// for the root actor.
     pub fn parent(&self) -> Option<&ActorAddress> {
         self.parent.as_ref()
+    }
+
+    pub fn shutdown(&self) {
+        self.executor_channel
+            .send(ExecutorCommands::ShutdownActor(self.address.clone()))
+            .unwrap();
     }
 }
