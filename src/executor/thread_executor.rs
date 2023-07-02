@@ -103,6 +103,18 @@ impl Executor for ThreadExecutor {
                         cell.set_shutdown();
                         cell.actor
                             .before_stop(context!(self, cell, SenderType::System));
+
+                        // Inform the runtime manager of the shutdown and also forward shutdown
+                        // signals to the children.
+                        self.runtime_manager.shutdown_actor(&address, false);
+                        for child in &cell.children {
+                            self.runtime_manager.shutdown_actor(child, true);
+                        }
+
+                        // TODO: Notify the parent and all of the watchers
+                        //       thought: maybe this should be done by the runtime manager when the
+                        //       shutdown signal is sent. (add an additional flag of "notify_parent"
+                        //       to the message we send in `runtime_manager.shutdown_actor`).
                     }
                     ExecutorCommands::Shutdown => {
                         info!("received shutdown command");
