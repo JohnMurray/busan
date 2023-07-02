@@ -111,12 +111,14 @@ impl Executor for ThreadExecutor {
             }
             // Iterate over the actor-cells and check if there are any non-empty mailboxes.
             // If one is found, process a message from it.
+            let mut messages_processed = 0;
             for (_, cell) in self.actor_cells.iter_mut() {
                 if !cell.is_shutdown() {
                     // TODO: Forward messages to dead-letter-queue
                     continue;
                 }
                 if !cell.mailbox.is_empty() {
+                    messages_processed += 1;
                     let result = cell.mailbox.try_recv();
                     if let Ok(letter) = result {
                         trace!("[{}] processing message: {:?}", &cell.address, &letter);
@@ -125,8 +127,12 @@ impl Executor for ThreadExecutor {
                     }
                 }
             }
-            trace!("nothing to do, sleeping...");
-            thread::sleep(Duration::from_millis(SLEEP_DURATION_MS));
+
+            // If no messages were processed, sleep for a bit to avoid busy-waiting
+            if messages_processed == 0 {
+                trace!("nothing to do, sleeping...");
+                thread::sleep(Duration::from_millis(SLEEP_DURATION_MS));
+            }
         }
 
         self.runtime_manager.notify_shutdown(self.name);
