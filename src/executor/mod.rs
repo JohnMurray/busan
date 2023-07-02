@@ -2,13 +2,14 @@
 
 pub(crate) mod thread_executor;
 
-use crate::actor::ActorCell;
+use crate::actor::{ActorAddress, ActorCell};
 use crate::config::ExecutorType;
 use crate::system::RuntimeManagerRef;
 use crate::util::CommandChannel;
 
 pub enum ExecutorCommands {
     AssignActor(ActorCell),
+    ShutdownActor(ActorAddress),
     Shutdown,
 }
 
