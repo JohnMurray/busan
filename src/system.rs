@@ -139,7 +139,7 @@ impl ActorSystem {
 struct RuntimeManager {
     /// Map of executor names to their command-channel (for sending commands)
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
-    actor_registry: HashMap<Uri, actor::Mailbox>,
+    actor_registry: HashMap<Uri, ActorRegistryEntry>,
 
     manager_command_channel: CommandChannel<ManagerCommands>,
 
@@ -200,7 +200,13 @@ impl RuntimeManager {
                     address.set_mailbox(sender.clone());
                     let cell = ActorCell::new(actor, receiver, address, parent);
 
-                    self.actor_registry.insert(address_uri, sender);
+                    self.actor_registry.insert(
+                        address_uri,
+                        ActorRegistryEntry {
+                            mailbox: sender,
+                            executor: executor_name.clone(),
+                        },
+                    );
 
                     self.executor_command_channels
                         .get(&executor_name)
@@ -208,13 +214,26 @@ impl RuntimeManager {
                         .send(ExecutorCommands::AssignActor(cell))
                         .unwrap();
                 }
+                Ok(ManagerCommands::ShutdownActor {
+                    address,
+                    forward_to_executor,
+                }) => {
+                    let lookup = self.actor_registry.remove(&address.uri);
+                    if forward_to_executor && lookup.is_some() {
+                        self.executor_command_channels
+                            .get(&lookup.unwrap().executor)
+                            .unwrap()
+                            .send(ExecutorCommands::ShutdownActor(address))
+                            .unwrap();
+                    }
+                }
                 Ok(ManagerCommands::ResolveAddress {
                     address_uri,
                     return_channel,
                 }) => {
-                    let mailbox_lookup = self.actor_registry.get(&address_uri);
-                    let result = match mailbox_lookup {
-                        Some(mailbox) => return_channel.try_send(Some(mailbox.clone())),
+                    let lookup = self.actor_registry.get(&address_uri);
+                    let result = match lookup {
+                        Some(registry) => return_channel.try_send(Some(registry.mailbox.clone())),
                         None => return_channel.try_send(None),
                     };
                     if result.is_err() {
@@ -290,6 +309,15 @@ impl RuntimeManagerRef {
             .unwrap();
     }
 
+    pub(crate) fn shutdown_actor(&self, address: &ActorAddress, forward_to_executor: bool) {
+        self.manager_command_channel
+            .send(ManagerCommands::ShutdownActor {
+                address: address.clone(),
+                forward_to_executor,
+            })
+            .unwrap();
+    }
+
     /// Resolve an address to mailbox by looking up the actor in the global registry. Note that this
     /// will block until the management thread has performed the lookup.
     pub(crate) fn resolve_address(&self, address: &ActorAddress) -> Option<actor::Mailbox> {
@@ -326,10 +354,27 @@ enum ManagerCommands {
         parent: Option<ActorAddress>,
     },
 
+    /// A request to shutdown an actor. This will update the runtime manager's actor registry and,
+    /// if requested, forward the shutdown request to the executor. This can be handy when you want
+    /// to shutdown an actor (e.g. a child of an actor that has initiated shutdown), but do not know
+    /// where the actor is currently running.
+    ShutdownActor {
+        address: ActorAddress,
+        forward_to_executor: bool,
+    },
+
     /// A request to resolve an actor address to a mailbox. This is given a direct return
     /// channel so the sender can block on the result of the lookup if desired.
     ResolveAddress {
         address_uri: Uri,
         return_channel: Sender<Option<actor::Mailbox>>,
     },
+}
+
+/// Value of actor-registry in the runtime manager. See [`RuntimeManager`] for details.
+struct ActorRegistryEntry {
+    mailbox: actor::Mailbox,
+    /// The name of the executor the actor is running on (may be used to lookup the executor's
+    /// command channel).
+    executor: String,
 }
