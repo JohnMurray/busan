@@ -33,6 +33,24 @@ pub trait Actor: Send {
     /// Receive a message. This is the primary method for handling messages and is called
     /// for every message received by the actor.
     fn receive(&mut self, ctx: Context, msg: Box<dyn Message>);
+
+    /// Hook called after shutdown has been initiated, but before the actor has been removed
+    /// from the executor. This can be used to send any final messages before the actor is
+    /// stopped.
+    ///
+    /// Cleanup may also happen in this method, but may also happen in the [`Actor::after_stop`]
+    /// method.
+    ///
+    /// __Note:__ When an actor is stopped, new messages may not be received. So while
+    /// messages can be sent, no reply will be able to be processed.
+    fn before_stop(&mut self, _ctx: Context) {}
+
+    /// Hook called after the actor has been shutdown and removed from the executor. This is
+    /// the final chance to cleanup/close any resources before the actor is dropped.
+    ///
+    /// __Note:__ Messages can no longer be sent from this method. See [`Actor::before_stop`]
+    /// for the last chance to send messages.
+    fn after_stop(&mut self) {}
 }
 
 /// ActorInit defines a method of construction for an actor that takes an initialization
