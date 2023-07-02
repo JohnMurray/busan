@@ -1,6 +1,8 @@
 use crate::actor::{ActorAddress, Letter, SenderType};
+use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
+use crate::util::CommandChannel;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
 
@@ -54,6 +56,8 @@ pub struct ActorCell {
     pub(crate) address: ActorAddress,
     pub(crate) children: Vec<ActorAddress>,
     pub(crate) parent: Option<ActorAddress>,
+
+    state_flags: u8,
 }
 
 impl ActorCell {
@@ -69,7 +73,16 @@ impl ActorCell {
             address,
             children: Vec::new(),
             parent,
+            state_flags: 0,
         }
+    }
+
+    pub(crate) fn set_shutdown(&mut self) {
+        self.state_flags |= 0b0000_0001;
+    }
+
+    pub(crate) fn is_shutdown(&self) -> bool {
+        self.state_flags & 0b0000_0001 != 0
     }
 }
 
@@ -95,6 +108,7 @@ macro_rules! debug_serialize_msg {
 pub struct Context<'a> {
     pub(crate) address: &'a ActorAddress,
     pub(crate) runtime_manager: &'a RuntimeManagerRef,
+    pub(crate) executor_command_channel: &'a CommandChannel<ExecutorCommands>,
     pub(crate) parent: &'a Option<ActorAddress>,
     pub(crate) children: &'a mut Vec<ActorAddress>,
     pub(crate) sender: &'a SenderType,
@@ -189,5 +203,12 @@ impl Context<'_> {
     /// for the root actor.
     pub fn parent(&self) -> Option<&ActorAddress> {
         self.parent.as_ref()
+    }
+
+    /// Perform immediate shutdown for the current actor.
+    pub fn shutdown(&self) {
+        self.executor_command_channel
+            .send(ExecutorCommands::ShutdownActor(self.address.clone()))
+            .unwrap();
     }
 }

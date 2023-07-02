@@ -78,11 +78,17 @@ impl Executor for ThreadExecutor {
                         cell.actor.before_start(Context {
                             address: &cell.address,
                             runtime_manager: &self.runtime_manager,
+                            executor_command_channel: &self.command_channel,
                             parent: &cell.parent,
                             children: &mut cell.children,
                             sender: &SenderType::System,
                         });
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
+                    }
+                    ExecutorCommands::ShutdownActor(address) => {
+                        let cell = self.actor_cells.get_mut(&address.uri).unwrap();
+                        cell.set_shutdown()
+                        // TODO: Call on_shutdown hook for actor
                     }
                     ExecutorCommands::Shutdown => {
                         info!("received shutdown command");
@@ -93,6 +99,10 @@ impl Executor for ThreadExecutor {
             // Iterate over the actor-cells and check if there are any non-empty mailboxes.
             // If one is found, process a message from it.
             for (_, cell) in self.actor_cells.iter_mut() {
+                if !cell.is_shutdown() {
+                    // TODO: Forward messages to dead-letter-queue
+                    continue;
+                }
                 if !cell.mailbox.is_empty() {
                     let result = cell.mailbox.try_recv();
                     if let Ok(letter) = result {
@@ -101,6 +111,7 @@ impl Executor for ThreadExecutor {
                             Context {
                                 address: &cell.address,
                                 runtime_manager: &self.runtime_manager,
+                                executor_command_channel: &self.command_channel,
                                 parent: &cell.parent,
                                 children: &mut cell.children,
                                 sender: &letter.sender,
