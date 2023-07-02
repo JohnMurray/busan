@@ -64,6 +64,25 @@ impl ThreadExecutor {
         }
     }
 }
+
+// Macro for quickly constructing a context object within the thread executor. The construction
+// of the context almost always looks the same, just some slight differences with the sender.
+macro_rules! context {
+    ($self:tt, $cell:tt, $sender:path) => {
+        context!($self, $cell, ($sender))
+    };
+    ($self:tt, $cell:tt, $sender:expr) => {
+        Context {
+            address: &$cell.address,
+            runtime_manager: &$self.runtime_manager,
+            executor_command_channel: &$self.command_channel,
+            parent: &$cell.parent,
+            children: &mut $cell.children,
+            sender: &$sender,
+        }
+    };
+}
+
 impl Executor for ThreadExecutor {
     fn run(mut self) {
         const SLEEP_DURATION_MS: u64 = 1;
@@ -75,14 +94,8 @@ impl Executor for ThreadExecutor {
                         debug!("received actor assignment for {}", &cell.address.uri);
                         self.assert_unique_address(&cell.address.uri);
                         trace!("calling before_start for actor {}", &cell.address.uri);
-                        cell.actor.before_start(Context {
-                            address: &cell.address,
-                            runtime_manager: &self.runtime_manager,
-                            executor_command_channel: &self.command_channel,
-                            parent: &cell.parent,
-                            children: &mut cell.children,
-                            sender: &SenderType::System,
-                        });
+                        cell.actor
+                            .before_start(context!(self, cell, SenderType::System));
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
                     ExecutorCommands::ShutdownActor(address) => {
@@ -107,17 +120,8 @@ impl Executor for ThreadExecutor {
                     let result = cell.mailbox.try_recv();
                     if let Ok(letter) = result {
                         trace!("[{}] processing message: {:?}", &cell.address, &letter);
-                        cell.actor.receive(
-                            Context {
-                                address: &cell.address,
-                                runtime_manager: &self.runtime_manager,
-                                executor_command_channel: &self.command_channel,
-                                parent: &cell.parent,
-                                children: &mut cell.children,
-                                sender: &letter.sender,
-                            },
-                            letter.payload,
-                        );
+                        cell.actor
+                            .receive(context!(self, cell, letter.sender), letter.payload);
                     }
                 }
             }
