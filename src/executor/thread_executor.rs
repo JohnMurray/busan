@@ -100,8 +100,9 @@ impl Executor for ThreadExecutor {
                     }
                     ExecutorCommands::ShutdownActor(address) => {
                         let cell = self.actor_cells.get_mut(&address.uri).unwrap();
-                        cell.set_shutdown()
-                        // TODO: Call on_shutdown hook for actor
+                        cell.set_shutdown();
+                        cell.actor
+                            .before_stop(context!(self, cell, SenderType::System));
                     }
                     ExecutorCommands::Shutdown => {
                         info!("received shutdown command");
