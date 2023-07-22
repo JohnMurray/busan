@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
-use crate::actor::{ActorCell, Context, SenderType, Uri};
+use crate::actor::{cell_state, ActorCell, Context, SenderType, Uri};
 use crate::executor::{
     CommandChannel, Executor, ExecutorCommands, ExecutorFactory, ExecutorHandle,
 };
@@ -79,6 +79,7 @@ macro_rules! context {
             parent: &$cell.parent,
             children: &mut $cell.children,
             sender: &$sender,
+            cell_state: &mut $cell.state,
         }
     };
 }
@@ -100,7 +101,7 @@ impl Executor for ThreadExecutor {
                     }
                     ExecutorCommands::ShutdownActor(address) => {
                         let cell = self.actor_cells.get_mut(&address.uri).unwrap();
-                        cell.set_shutdown();
+                        cell_state::set_shutdown(&mut cell.state);
                         cell.actor
                             .before_stop(context!(self, cell, SenderType::System));
 
@@ -126,7 +127,7 @@ impl Executor for ThreadExecutor {
             // If one is found, process a message from it.
             let mut messages_processed = 0;
             for (_, cell) in self.actor_cells.iter_mut() {
-                if !cell.is_shutdown() {
+                if !cell_state::is_shutdown(cell.state) {
                     // TODO: Forward messages to dead-letter-queue
                     continue;
                 }
