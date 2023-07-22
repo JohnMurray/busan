@@ -64,6 +64,26 @@ pub trait ActorInit {
         Self: Sized + Actor;
 }
 
+/// Simple type-alias for a bitmask representing the state of an [`ActorCell`].
+pub type CellState = u8;
+
+pub mod cell_state {
+    use super::CellState;
+
+    const SHUTDOWN: CellState = 0b0000_0001;
+
+    /// Check if the cell is in a shutdown state
+    pub fn is_shutdown(state: CellState) -> bool {
+        state & SHUTDOWN == SHUTDOWN
+    }
+
+    /// Set the shell into a shutdown state. __Note__ that this is a one-way action. A cell
+    /// in a shutdown state cannot be removed from the shutdown state.
+    pub fn set_shutdown(state: &mut CellState) {
+        *state |= SHUTDOWN;
+    }
+}
+
 /// [`ActorCell`] is the wrapper to the user-defined actor, wrapping the mailbox parent references,
 /// and other actor-related information that is useful internally. This is primarily an internal
 /// interface, but is exposed for user-provided executors or extensions.
@@ -74,8 +94,7 @@ pub struct ActorCell {
     pub(crate) address: ActorAddress,
     pub(crate) children: Vec<ActorAddress>,
     pub(crate) parent: Option<ActorAddress>,
-
-    state_flags: u8,
+    pub(crate) state: CellState,
 }
 
 impl ActorCell {
@@ -91,16 +110,8 @@ impl ActorCell {
             address,
             children: Vec::new(),
             parent,
-            state_flags: 0,
+            state: 0,
         }
-    }
-
-    pub(crate) fn set_shutdown(&mut self) {
-        self.state_flags |= 0b0000_0001;
-    }
-
-    pub(crate) fn is_shutdown(&self) -> bool {
-        self.state_flags & 0b0000_0001 != 0
     }
 }
 
@@ -130,6 +141,7 @@ pub struct Context<'a> {
     pub(crate) parent: &'a Option<ActorAddress>,
     pub(crate) children: &'a mut Vec<ActorAddress>,
     pub(crate) sender: &'a SenderType,
+    pub(crate) cell_state: &'a mut CellState,
 }
 
 impl Context<'_> {
@@ -224,7 +236,8 @@ impl Context<'_> {
     }
 
     /// Perform immediate shutdown for the current actor.
-    pub fn shutdown(&self) {
+    pub fn shutdown(&mut self) {
+        cell_state::set_shutdown(self.cell_state);
         self.executor_command_channel
             .send(ExecutorCommands::ShutdownActor(self.address.clone()))
             .unwrap();
