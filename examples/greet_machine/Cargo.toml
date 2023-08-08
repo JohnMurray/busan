@@ -1,0 +1,12 @@
+[package]
+name = "examples_greet_machine"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+busan = { path = "../../" }
+prost = "0.11"
+
+[build-dependencies]
+prost-build = "0.11"
