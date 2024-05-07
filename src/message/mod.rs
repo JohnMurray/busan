@@ -22,6 +22,9 @@ pub trait Message: prost::Message {
     }
 }
 
+/// A simple trait for converting types to a Message that can be sent/received
+/// to/from an actor. Many of the entrypoints to sending messages will use
+/// `ToMessage` rather than `Message`, directly.
 pub trait ToMessage<M: Message> {
     fn to_message(self) -> M;
 
