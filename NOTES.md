@@ -7,6 +7,7 @@ something usable.
 - [ ] Lifecycle Management (pre-condition to supervision)
 - [ ] ACK messages (pre-condition to various forms of message routing)
 - [ ] Message routing
+- [ ] Stats & Observability
 
 
 ## Offline Development
