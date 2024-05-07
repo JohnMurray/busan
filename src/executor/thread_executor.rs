@@ -134,10 +134,10 @@ impl Executor for ThreadExecutor {
                 if !cell.mailbox.is_empty() {
                     messages_processed += 1;
                     let result = cell.mailbox.try_recv();
-                    if let Ok(letter) = result {
-                        trace!("[{}] processing message: {:?}", &cell.address, &letter);
+                    if let Ok(envelope) = result {
+                        trace!("[{}] processing message: {:?}", &cell.address, &envelope);
                         cell.actor
-                            .receive(context!(self, cell, letter.sender), letter.payload);
+                            .receive(context!(self, cell, envelope.sender), envelope.payload);
                     }
                 }
             }

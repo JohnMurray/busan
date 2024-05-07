@@ -98,4 +98,4 @@ pub use actor::*;
 pub use address::*;
 
 pub(crate) use letter::*;
-pub(crate) type Mailbox = crossbeam_channel::Sender<Letter>;
+pub(crate) type Mailbox = crossbeam_channel::Sender<Envelope>;

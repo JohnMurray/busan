@@ -3,7 +3,7 @@ use log::{info, warn};
 use std::collections::HashMap;
 use std::thread;
 
-use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Letter, Uri};
+use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Envelope, Uri};
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::message::ToMessage;
 use crate::prelude::Message;
@@ -195,7 +195,7 @@ impl RuntimeManager {
                     parent,
                 }) => {
                     let executor_name = self.get_next_executor();
-                    let (sender, receiver) = unbounded::<Letter>();
+                    let (sender, receiver) = unbounded::<Envelope>();
                     let address_uri = address.uri.clone();
                     address.set_mailbox(sender.clone());
                     let cell = ActorCell::new(actor, receiver, address, parent);

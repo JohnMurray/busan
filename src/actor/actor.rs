@@ -1,4 +1,4 @@
-use crate::actor::{ActorAddress, Letter, SenderType};
+use crate::actor::{ActorAddress, Envelope, SenderType};
 use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
@@ -90,7 +90,7 @@ pub mod cell_state {
 /// <!-- TODO: Is this actually useful for extension or does it need to be opened up more? -->
 pub struct ActorCell {
     pub(crate) actor: Box<dyn Actor>,
-    pub(crate) mailbox: Receiver<Letter>,
+    pub(crate) mailbox: Receiver<Envelope>,
     pub(crate) address: ActorAddress,
     pub(crate) children: Vec<ActorAddress>,
     pub(crate) parent: Option<ActorAddress>,
@@ -100,7 +100,7 @@ pub struct ActorCell {
 impl ActorCell {
     pub(crate) fn new(
         actor: Box<dyn Actor>,
-        mailbox: Receiver<Letter>,
+        mailbox: Receiver<Envelope>,
         address: ActorAddress,
         parent: Option<ActorAddress>,
     ) -> Self {

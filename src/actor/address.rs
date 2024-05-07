@@ -1,5 +1,5 @@
 use crate::actor::proto::Scheme;
-use crate::actor::{Letter, Mailbox};
+use crate::actor::{Envelope, Mailbox};
 use crate::message::Message;
 use log::trace;
 use std::cell::RefCell;
@@ -68,8 +68,8 @@ impl ActorAddress {
             self
         );
 
-        let letter = Letter::new(from, self, message);
-        let result = (self.mailbox.borrow().as_ref().unwrap()).send(letter);
+        let envelope = Envelope::new(from, self, message);
+        let result = (self.mailbox.borrow().as_ref().unwrap()).send(envelope);
         // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
         //       redirect to the dead letter queue. This function may simply return an error
         //       so that the caller can do the redirection.

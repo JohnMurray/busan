@@ -2,15 +2,15 @@ use crate::actor::ActorAddress;
 use crate::message::Message;
 use std::fmt::{Display, Formatter};
 
-/// `Letter` is the internal representation for messages sent between actors, containing the
+/// `Envelope` is the internal representation for messages sent between actors, containing the
 /// actual message (the payload) as well as some additional meta-data (currently just the sender).
 #[derive(Debug)]
-pub(crate) struct Letter {
+pub(crate) struct Envelope {
     pub(crate) sender: SenderType,
     pub(crate) payload: Box<dyn Message>,
 }
 
-/// `SenderType` to abstractly represent the sender on a Letter. While the sender _could_ simply
+/// `SenderType` to abstractly represent the sender on a Envelope. While the sender _could_ simply
 /// be represented as an `ActorAddress` always, this might add a lot of additional overhead that
 /// is otherwise not necessary. For example, an actor sending a message to itself will not need
 /// the address. Similarly, other circumstances may not require transmission of the address.
@@ -43,8 +43,8 @@ impl Display for SenderType {
     }
 }
 
-impl Letter {
-    /// Construct a new letter. This will automatically determine the sender type based on the
+impl Envelope {
+    /// Construct a new envelope. This will automatically determine the sender type based on the
     /// sender and receiver addresses. A `None` sender will always be interpreted as a
     /// `SenderType::System`.
     pub fn new(
