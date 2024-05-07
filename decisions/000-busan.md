@@ -23,7 +23,7 @@ of the frameworks are fairly minimal and would require significant development a
 investment to get to the level of Erlang/Elixir (especially with OTP) or Akka.
 
 A developer writing Rust wishing to build a system with similar quality and features
-to a system built on Akka or OTP must either implement a significant amount of 
+to a system built on Akka or OTP must either implement a significant amount of
 functionality, or switch languages to get access to those features.
 
 __Additional Context__ \
@@ -80,7 +80,7 @@ principles.
 
 ## Choice
 
-Yeah... I'm going to build my own. I can do this, right? RIGHT? I mean, I'll just stat
+Yeah... I'm going to build my own. I can do this, right? RIGHT? I mean, I'll just start
 with some basic actors, write a scheduler, decide on a distribution strategy. Wait...
 speaking of strategies I also need some sort of spawn strategy for balancing actors on
 threads. Wait... do I need threads? What about async IO stuff :thinking:
@@ -94,7 +94,7 @@ Joking aside, I think creating the solution I'm envisioning _does require_ start
 a blank slate. There are some fundamental decisions that most actor implementation start
 out making that I think should be removed and there are some (possibly controversial,
 possibly bad) decisions that I'd like to experiment with that are not fit for an
- existing project of any real maturity.
+existing project of any real maturity.
 
 This will become more clear as this project evolves and more decision logs are written,
 but a short preview (without context) might be:
@@ -114,7 +114,7 @@ odd objectives without more context (which will come later).
 
 It's worth acknowledging that this is __the most risky__ option I could choose. Doing
 nothing would be the safest, because I could have declared victory before even writing
-this decision log. Contributing to Actix would be the quickest path completion and
+this decision log. Contributing to Actix would be the quickest path to completion and
 value for the community. Building my own is risky for a lot of reasons; I could burn
 out or get tired, I could build something no one wants whereas building on Actix would
 give me quicker feedback, I could take so long that some future _thing_ makes my work
