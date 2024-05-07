@@ -15,7 +15,7 @@ macro_rules! impl_to_message_for_primitive {
                 }
             }
             fn is_primitive<L: message::private::IsLocal>(&self) -> bool {
-                return true;
+                true
             }
         }
     };
