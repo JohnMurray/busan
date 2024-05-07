@@ -1,3 +1,14 @@
+## Focus Areas
+
+Parts of Busan that need some focused development efforts to get somewhere to
+something usable.
+
+- [ ] Actor Supervision
+- [ ] Lifecycle Management (pre-condition to supervision)
+- [ ] ACK messages (pre-condition to various forms of message routing)
+- [ ] Message routing
+
+
 ## Offline Development
 
 - `cargo doc --open` to view the rustdocs for all dependencies (_all_)
