@@ -17,7 +17,7 @@ communication.
   be spawned by other actors, creating a parent/children relationships. While this relationship does
   not _have_ to be encoded in the address format, the address should not _prevent_ the encoding of
   this information somewhere (even if private).
-+e __Optimization Friendly__ - Addressing (and address resolution) should not be too prescriptive
++ __Optimization Friendly__ - Addressing (and address resolution) should not be too prescriptive
   in how the underlying system works. The solution does not need to be performant today, but it
   shouldn't make internal changes more difficult later.
     + Example: Using the ID of the executor in the address would prevent us from moving actors
@@ -73,7 +73,7 @@ Parents are encoded with an internal pointer. In the case of our example, the pa
 actor. An example of what this could look like:
 
 ```rust
-println!("{:?} -> {:?}", addr.parent, addr); 
+println!("{:?} -> {:?}", addr.parent, addr);
 // local:/ping-3 -> local:/pong
 ```
 

@@ -8,6 +8,7 @@ something usable.
 - [ ] ACK messages (pre-condition to various forms of message routing)
 - [ ] Message routing
 - [ ] Stats & Observability
+- [ ] Behavior system
 
 
 ## Offline Development
