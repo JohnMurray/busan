@@ -8,6 +8,7 @@ use std::fmt::{Display, Formatter};
 pub(crate) struct Envelope {
     pub(crate) sender: SenderType,
     pub(crate) payload: Box<dyn Message>,
+    pub(crate) ack: Option<u32>,
 }
 
 /// `SenderType` to abstractly represent the sender on a Envelope. While the sender _could_ simply
@@ -47,32 +48,41 @@ impl Envelope {
     /// Construct a new envelope. This will automatically determine the sender type based on the
     /// sender and receiver addresses. A `None` sender will always be interpreted as a
     /// `SenderType::System`.
+    ///
+    /// Optionall define an ACK nonce-value. If this is non-None, the sender is not the same as
+    /// the receiver, and the message is not system-originated, an [`crate::message::system::Ack`]
+    /// will be sent to the sender on receipt by the receiver.
     pub fn new(
         sender: Option<ActorAddress>,
         receiver: &ActorAddress,
         payload: Box<dyn Message>,
+        ack: Option<u32>,
     ) -> Self {
         match sender {
             None => Self {
                 sender: SenderType::System,
                 payload,
+                ack: None,
             },
             Some(sender) => {
                 if sender.uri == receiver.uri {
                     Self {
                         sender: SenderType::SentToSelf,
                         payload,
+                        ack: None,
                     }
                 } else if receiver.is_parent(&sender) {
                     // The sender is the parent to the receiver
                     Self {
                         sender: SenderType::Parent,
                         payload,
+                        ack,
                     }
                 } else {
                     Self {
                         sender: SenderType::Actor(sender),
                         payload,
+                        ack,
                     }
                 }
             }

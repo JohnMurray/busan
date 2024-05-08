@@ -1,6 +1,7 @@
 //! Core message types used by Busan and primitive type wrappers
 
 pub mod common_types;
+pub mod system;
 
 pub trait Message: prost::Message {
     fn as_any(&self) -> &dyn std::any::Any;

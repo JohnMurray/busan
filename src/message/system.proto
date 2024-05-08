@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package message.system;
+
+/** A simple message to signal that a message was received. */
+message Ack{
+    uint32 nonce = 1;
+}

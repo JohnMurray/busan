@@ -172,7 +172,12 @@ impl Context<'_> {
 
     // TODO: Document
     // TODO: Coordinate documentation with `send` method
-    pub fn send_message(&self, addr: &ActorAddress, mut message: Box<dyn Message>) {
+    pub fn send_message(
+        &self,
+        addr: &ActorAddress,
+        mut message: Box<dyn Message>,
+        ack_nonce: Option<u32>,
+    ) {
         // Validate that the address is resolved (this is a blocking call to the runtime
         // manager if unresolved).
         if !addr.is_resolved() {
@@ -194,14 +199,25 @@ impl Context<'_> {
         let message = debug_serialize_msg!(message);
 
         // Send the message to the resolved address
-        addr.send(Some(self.address.clone()), message);
+        addr.send(Some(self.address.clone()), message, ack_nonce);
     }
 
     // TODO: Document
     // TODO: Talk about the debug_serialize_msg! in the docs
     pub fn send<M: Message + 'static, T: ToMessage<M>>(&self, addr: &ActorAddress, message: T) {
         let message = message.to_message();
-        self.send_message(addr, Box::new(message));
+        self.send_message(addr, Box::new(message), None);
+    }
+
+    // TODO: Document
+    pub fn send_with_ack<M: Message + 'static, T: ToMessage<M>>(
+        &self,
+        addr: &ActorAddress,
+        message: T,
+        nonce: u32,
+    ) {
+        let message = message.to_message();
+        self.send_message(addr, Box::new(message), Some(nonce));
     }
 
     /// Get the sender of the current message.

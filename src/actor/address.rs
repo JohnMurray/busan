@@ -59,7 +59,12 @@ impl ActorAddress {
         self.mailbox.borrow().is_some()
     }
 
-    pub(crate) fn send(&self, from: Option<Self>, message: Box<dyn Message>) {
+    pub(crate) fn send(
+        &self,
+        from: Option<Self>,
+        message: Box<dyn Message>,
+        ack_nonce: Option<u32>,
+    ) {
         trace!(
             "[{}] Sending message to {}",
             from.as_ref()
@@ -68,7 +73,7 @@ impl ActorAddress {
             self
         );
 
-        let envelope = Envelope::new(from, self, message);
+        let envelope = Envelope::new(from, self, message, ack_nonce);
         let result = (self.mailbox.borrow().as_ref().unwrap()).send(envelope);
         // TODO: Handle a non-OK error (once actor shutdown is implemented) On error, should
         //       redirect to the dead letter queue. This function may simply return an error
