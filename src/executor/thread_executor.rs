@@ -7,6 +7,7 @@ use crate::actor::{cell_state, ActorCell, Context, SenderType, Uri};
 use crate::executor::{
     CommandChannel, Executor, ExecutorCommands, ExecutorFactory, ExecutorHandle,
 };
+use crate::message::system::ack;
 use crate::system::RuntimeManagerRef;
 
 pub struct ThreadExecutorFactory {}
@@ -61,6 +62,12 @@ impl ThreadExecutor {
     fn assert_unique_address(&self, address: &Uri) {
         if self.actor_cells.contains_key(address) {
             panic!("Actor name {} already exists", address);
+        }
+    }
+
+    fn send_ack(ctx: &Context, nonce: u32) {
+        if let SenderType::Actor(from) = ctx.sender {
+            ctx.send(from, ack(nonce));
         }
     }
 }
@@ -137,8 +144,11 @@ impl Executor for ThreadExecutor {
                     let result = cell.mailbox.try_recv();
                     if let Ok(envelope) = result {
                         trace!("[{}] processing message: {:?}", &cell.address, &envelope);
-                        cell.actor
-                            .receive(context!(self, cell, envelope.sender), envelope.payload);
+                        let ctx = context!(self, cell, envelope.sender);
+                        if let Some(ack_nonce) = envelope.ack {
+                            Self::send_ack(&ctx, ack_nonce);
+                        }
+                        cell.actor.receive(ctx, envelope.payload);
                     }
                 }
             }

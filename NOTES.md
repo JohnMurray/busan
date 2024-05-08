@@ -14,7 +14,8 @@ something usable.
 
 - [x] Track the nonce-state so that it can be auto-incremented without user tracking
 - [x] Send the nonce from the actor context
-- [ ] Read the nonce-value in an actor-specific method that is user-overridable
+- [x] Read the nonce-value in an actor-specific method that is user-overridable
+- [ ] Example
 
 
 ### Randome cleanup
