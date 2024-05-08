@@ -10,6 +10,18 @@ something usable.
 - [ ] Stats & Observability
 - [ ] Behavior system
 
+### Message ACK'nowledgement
+
+- [x] Track the nonce-state so that it can be auto-incremented without user tracking
+- [x] Send the nonce from the actor context
+- [ ] Read the nonce-value in an actor-specific method that is user-overridable
+
+
+### Randome cleanup
+
+- [ ] Document send methods in `actor.rs`
+- [ ] Is the resolution step persisted on addresses on copy/move?
+
 
 ## Offline Development
 
