@@ -217,10 +217,12 @@ impl Context<'_> {
         &mut self,
         addr: &ActorAddress,
         message: T,
-    ) {
+    ) -> u32 {
+        let nonce = *self.ack_nonce;
         *self.ack_nonce += 1;
         let message = message.to_message();
-        self.send_message(addr, Box::new(message), Some(*self.ack_nonce));
+        self.send_message(addr, Box::new(message), Some(nonce));
+        nonce
     }
 
     /// Get the sender of the current message.
