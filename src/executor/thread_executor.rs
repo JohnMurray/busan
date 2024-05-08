@@ -80,6 +80,7 @@ macro_rules! context {
             children: &mut $cell.children,
             sender: &$sender,
             cell_state: &mut $cell.state,
+            ack_nonce: &mut $cell.ack_nonce,
         }
     };
 }

@@ -95,6 +95,7 @@ pub struct ActorCell {
     pub(crate) children: Vec<ActorAddress>,
     pub(crate) parent: Option<ActorAddress>,
     pub(crate) state: CellState,
+    pub(crate) ack_nonce: u32,
 }
 
 impl ActorCell {
@@ -111,6 +112,7 @@ impl ActorCell {
             children: Vec::new(),
             parent,
             state: 0,
+            ack_nonce: 0,
         }
     }
 }
@@ -142,6 +144,7 @@ pub struct Context<'a> {
     pub(crate) children: &'a mut Vec<ActorAddress>,
     pub(crate) sender: &'a SenderType,
     pub(crate) cell_state: &'a mut CellState,
+    pub(crate) ack_nonce: &'a mut u32,
 }
 
 impl Context<'_> {
@@ -211,13 +214,13 @@ impl Context<'_> {
 
     // TODO: Document
     pub fn send_with_ack<M: Message + 'static, T: ToMessage<M>>(
-        &self,
+        &mut self,
         addr: &ActorAddress,
         message: T,
-        nonce: u32,
     ) {
+        *self.ack_nonce += 1;
         let message = message.to_message();
-        self.send_message(addr, Box::new(message), Some(nonce));
+        self.send_message(addr, Box::new(message), Some(*self.ack_nonce));
     }
 
     /// Get the sender of the current message.
