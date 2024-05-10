@@ -252,10 +252,13 @@ impl RuntimeManager {
 
     fn get_next_executor(&mut self) -> String {
         let mut iter = self.executor_command_channels.iter();
+        debug_assert!(iter.len() > 0, "No executors found");
         if self.round_robin_state >= iter.len() {
             self.round_robin_state = 0;
         }
-        iter.nth(self.round_robin_state).unwrap().0.clone()
+        let executor = iter.nth(self.round_robin_state).unwrap().0.clone();
+        self.round_robin_state += 1;
+        executor
     }
 }
 
