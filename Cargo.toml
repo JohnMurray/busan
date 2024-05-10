@@ -22,6 +22,7 @@ members = [
     "busan-derive",
 
     "examples/hello_world",
+    "examples/msg_ack",
     "examples/ping_pong",
 ]
 

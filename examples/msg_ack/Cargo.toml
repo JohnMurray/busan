@@ -1,0 +1,10 @@
+[package]
+name = "examples_msg_ack"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+busan = { path = "../../" }
+log = "0.4"
+env_logger = "0.10"
