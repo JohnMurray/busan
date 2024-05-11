@@ -16,14 +16,26 @@ something usable.
 - [x] Send the nonce from the actor context
 - [x] Read the nonce-value in an actor-specific method that is user-overridable
 - [x] Example
-- [ ] Revise example with working spawn
+- [x] Revise example with working spawn
+- [ ] Get example working wit proper shutdown
 
 
 ### Randome cleanup
 
 - [ ] Document send methods in `actor.rs`
 - [ ] Is the resolution step persisted on addresses on copy/move?
-- [ ] Block on child spawn - the actor should be allocated... I think
+- [x] Block on child spawn - the actor should be allocated... I think
+- [ ] crossbeam channel `send` macro that asserts sending, something like:
+    ```rust
+    macro_rules! debug_assert_send {
+        let result = channel.send(...)
+        debug_assert!(result.is_ok(), "Failed to send along channel...");
+        match result {
+            Ok(_) => (),
+            Err(e) => error!("Failed to send along chanel... {}", e);
+        }
+    }
+    ```
 
 
 ## Offline Development
