@@ -65,9 +65,17 @@ impl ThreadExecutor {
         }
     }
 
+    /// Send an ACK message to the sender (extracted from context)
     fn send_ack(ctx: &Context, nonce: u32) {
-        if let SenderType::Actor(from) = ctx.sender {
-            ctx.send(from, ack(nonce));
+        match ctx.sender {
+            SenderType::Actor(from) => ctx.send(from, ack(nonce)),
+            SenderType::Parent => {
+                if let Some(from) = ctx.parent().as_ref() {
+                    ctx.send(from, ack(nonce));
+                }
+            }
+            SenderType::SentToSelf => ctx.send(ctx.address, ack(nonce)),
+            SenderType::System => (),
         }
     }
 }
@@ -135,7 +143,7 @@ impl Executor for ThreadExecutor {
             // If one is found, process a message from it.
             let mut messages_processed = 0;
             for (_, cell) in self.actor_cells.iter_mut() {
-                if !cell_state::is_shutdown(cell.state) {
+                if cell_state::is_shutdown(cell.state) {
                     // TODO: Forward messages to dead-letter-queue
                     continue;
                 }
@@ -146,6 +154,7 @@ impl Executor for ThreadExecutor {
                         trace!("[{}] processing message: {:?}", &cell.address, &envelope);
                         let ctx = context!(self, cell, envelope.sender);
                         if let Some(ack_nonce) = envelope.ack {
+                            trace!("Sending ACK({}) to {}", ack_nonce, ctx.sender);
                             Self::send_ack(&ctx, ack_nonce);
                         }
                         cell.actor.receive(ctx, envelope.payload);

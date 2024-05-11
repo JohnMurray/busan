@@ -1,4 +1,5 @@
 use crate::actor::{ActorAddress, Envelope, SenderType};
+use crate::error::BusanError;
 use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
@@ -151,26 +152,27 @@ impl Context<'_> {
     /// Create a new (child) actor.
     ///
     /// This method will create a new actor instance and coordinate with the runtime manager to
-    /// schedule the actor (on an executor). The address returned can be used to immediately send
-    /// messages.
+    /// schedule the actor (on an executor). Whether local or remote, this is __not__ an immediate
+    /// action as an available executor must be found or network communication with another instance
+    /// must occur.
     ///
-    /// __Important Note__ \
-    /// Sending a message to an actor requires "resolving" the address. This is a blocking call
-    /// to the runtime manager. Immediately creating and then sending a message to a child actor
-    /// may result in a small amount of waiting. This should be avoided if possible.
+    /// A spawn handle is returned that can be used to poll that status or block on the actor being
+    /// scheduled and ready to receive messages. The result of the `await_*` functions is a fully
+    /// resolved `ActorAddress`
     pub fn spawn_child<A: ActorInit<Init = M> + Actor + 'static, T: ToMessage<M>, M: Message>(
         &mut self,
         name: &str,
         init_msg: T,
-    ) -> ActorAddress {
+    ) -> ActorSpawnHandle {
         let address = ActorAddress::new_child(self.address, name, self.children.len());
         self.children.push(address.clone());
-        self.runtime_manager.assign_actor(
+        let ready_channel = self.runtime_manager.assign_actor(
             Box::new(A::init(init_msg.to_message())),
-            address.clone(),
+            address,
             Some(self.address.clone()),
         );
-        address
+
+        ActorSpawnHandle { ready_channel }
     }
 
     // TODO: Document
@@ -262,5 +264,50 @@ impl Context<'_> {
         self.executor_command_channel
             .send(ExecutorCommands::ShutdownActor(self.address.clone()))
             .unwrap();
+    }
+}
+
+pub struct ActorSpawnHandle {
+    ready_channel: Receiver<Result<ActorAddress, BusanError>>,
+}
+
+/// Handle used to await actor assignment upon initial creation (spawn).
+impl ActorSpawnHandle {
+    /// Polls to see if the actor has been scheduled. This does not block. Once
+    /// this returns `true`, an [`ActorAddress`] can be resolved with
+    /// (`await_ready`)[`Self::await_ready`] without blocking.
+    ///
+    /// Note: Calling this function after the spawn handle has resolved to an
+    /// [`ActorAddress`] (by calling (`await_ready`)[`Self::await_ready`] or
+    /// (`await_unwrap`)[`Self::await_unwrap`]) has undefined behavior.
+    pub fn ready(&self) -> bool {
+        !self.ready_channel.is_empty()
+    }
+
+    /// Waits for the actor to be scheduled and returns an [`ActorAddress`] wrapped
+    /// in a `Result`.
+    ///
+    /// This returns an error when the actor fails to be scheduled.
+    ///
+    /// Note: This function blocks for an indeterminate amount of time while awaiting
+    /// actor assignment.
+    pub fn await_ready(&self) -> Result<ActorAddress, BusanError> {
+        // TODO: A reasonable wait timeout here would be good, probably something
+        // that could be defined is a global/system-level config.
+        match self.ready_channel.recv() {
+            Ok(res) => res,
+            Err(e) => Err(BusanError::UnassignableActor(format!(
+                "Internal Error: {}",
+                e
+            ))),
+        }
+    }
+
+    /// Blocks on actor assignment and discards the error. Equivalent to
+    /// ```rust
+    /// spawn_handle.await_ready().unwrap()
+    /// ```
+    pub fn await_unwrap(&self) -> ActorAddress {
+        self.await_ready().unwrap()
     }
 }

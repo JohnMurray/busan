@@ -1,9 +1,10 @@
-use crossbeam_channel::{bounded, unbounded, Sender};
+use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use log::{info, warn};
 use std::collections::HashMap;
 use std::thread;
 
 use crate::actor::{Actor, ActorAddress, ActorCell, ActorInit, Envelope, Uri};
+use crate::error::BusanError;
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::message::ToMessage;
 use crate::prelude::Message;
@@ -193,12 +194,13 @@ impl RuntimeManager {
                     actor,
                     address,
                     parent,
+                    ready_channel,
                 }) => {
                     let executor_name = self.get_next_executor();
                     let (sender, receiver) = unbounded::<Envelope>();
                     let address_uri = address.uri.clone();
                     address.set_mailbox(sender.clone());
-                    let cell = ActorCell::new(actor, receiver, address, parent);
+                    let cell = ActorCell::new(actor, receiver, address.clone(), parent);
 
                     self.actor_registry.insert(
                         address_uri,
@@ -213,6 +215,8 @@ impl RuntimeManager {
                         .unwrap()
                         .send(ExecutorCommands::AssignActor(cell))
                         .unwrap();
+
+                    let _ = ready_channel.send(Ok(address));
                 }
                 Ok(ManagerCommands::ShutdownActor {
                     address,
@@ -302,14 +306,17 @@ impl RuntimeManagerRef {
         actor: Box<dyn Actor>,
         address: ActorAddress,
         parent: Option<ActorAddress>,
-    ) {
+    ) -> Receiver<Result<ActorAddress, BusanError>> {
+        let (sender, receiver) = bounded::<Result<ActorAddress, BusanError>>(1);
         self.manager_command_channel
             .send(ManagerCommands::AssignActor {
                 actor,
                 address,
                 parent,
+                ready_channel: sender,
             })
             .unwrap();
+        receiver
     }
 
     pub(crate) fn shutdown_actor(&self, address: &ActorAddress, forward_to_executor: bool) {
@@ -351,10 +358,12 @@ enum ManagerCommands {
     ///   + Wrap the actor into an `ActorCell` with a mailbox and address
     ///   + Store the `ActorAddress` in a global registry for address resolution
     ///   + Assign the actor to an executor
+    ///   + Return a fully realized address of the assigned actor through the `ready_channel`
     AssignActor {
         actor: Box<dyn Actor>,
         address: ActorAddress,
         parent: Option<ActorAddress>,
+        ready_channel: Sender<Result<ActorAddress, BusanError>>,
     },
 
     /// A request to shutdown an actor. This will update the runtime manager's actor registry and,
