@@ -10,6 +10,20 @@ something usable.
 - [ ] Stats & Observability
 - [ ] Behavior system
 
+
+### Actor Shutdown
+
+This is pretty broken right now and a hack. We should do this properly.
+
+- [ ] Initial shutdown request
+    - [ ] Block receipt of new messages
+    - [ ] Send shutdown notices to all watchers
+    - [ ] Call `before_shutdown` handle on the actor
+    - [ ] Call shutdown (__and wait for completion__) on all children
+    - [ ] Call `after_shutdown` handle on the actor
+- [ ] Shutdown should be handled by the runtime-manager
+- [ ] Shutdown actions should be designed in terms of trees and sub-trees
+
 ### Message ACK'nowledgement
 
 - [x] Track the nonce-state so that it can be auto-incremented without user tracking
