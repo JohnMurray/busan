@@ -1,3 +1,7 @@
+//! Demonstrate ACK messages by creating a "load balancer"" that sends work as soon
+//! as the previous message has been acknowledged. Since message ACK's are based on
+//! receipt in the actor's queue and not a signal for message processing, this isn't
+//! a real load balancer.
 use busan::actor::{Actor, ActorAddress, ActorInit, Context};
 use busan::config::{ActorSystemConfig, ExecutorConfig};
 use busan::message::common_types::{I32Wrapper, U32Wrapper};
@@ -76,7 +80,7 @@ impl Actor for Distributor {
                 self.send_work(&mut ctx, &sender);
             }
             if self.work_ack_nonce.is_empty() && self.work_queue.is_empty() {
-                info!("calling shutdown");
+                info!("All work has been compelted. Shutting down.");
                 ctx.shutdown();
             }
         }
@@ -118,6 +122,5 @@ fn main() {
         },
     });
     system.spawn_root_actor::<Distributor, _, _>("distributor", 10u32);
-
     system.await_shutdown();
 }
