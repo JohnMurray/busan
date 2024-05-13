@@ -314,6 +314,11 @@ impl ActorSpawnHandle {
     /// spawn_handle.await_ready().unwrap()
     /// ```
     pub fn await_unwrap(&self) -> ActorAddress {
+        let res = self.await_ready();
+        // If there is an error, panic with a descriptive message of what went wrong
+        if let Err(e) = res {
+            panic!("Failed while waiting for actor spawn: {}", e);
+        }
         self.await_ready().unwrap()
     }
 }
