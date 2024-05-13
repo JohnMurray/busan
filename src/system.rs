@@ -8,6 +8,7 @@ use crate::error::BusanError;
 use crate::executor::{get_executor_factory, ExecutorCommands, ExecutorHandle};
 use crate::message::ToMessage;
 use crate::prelude::Message;
+use crate::util::lib_macros::{channel_must_recv, channel_send};
 use crate::util::CommandChannel;
 use crate::{actor, config};
 
@@ -105,11 +106,13 @@ impl ActorSystem {
         debug_assert!(!self.root_actor_assigned, "Root actor already assigned");
 
         self.root_actor_assigned = true;
-        self.runtime_manager.assign_actor(
+        let ready = self.runtime_manager.assign_actor(
             Box::new(A::init(init_msg.to_message())),
             ActorAddress::new_root(name),
             None,
         );
+        // Discard the address of the root actor
+        let _ = channel_must_recv!(ready);
     }
 
     /// Send shutdown message to all executors and wait for them to finish. This includes
@@ -183,7 +186,7 @@ impl RuntimeManager {
                     self.executor_command_channels
                         .iter()
                         .for_each(|(_, channel)| {
-                            channel.send(ExecutorCommands::Shutdown).unwrap();
+                            channel_send!(channel, ExecutorCommands::Shutdown);
                         });
                 }
 
@@ -215,13 +218,12 @@ impl RuntimeManager {
                         },
                     );
 
-                    self.executor_command_channels
-                        .get(&executor_name)
-                        .unwrap()
-                        .send(ExecutorCommands::AssignActor(cell))
-                        .unwrap();
+                    channel_send!(
+                        self.executor_command_channels.get(&executor_name).unwrap(),
+                        ExecutorCommands::AssignActor(cell)
+                    );
 
-                    let _ = ready_channel.send(Ok(address));
+                    channel_send!(ready_channel, Ok(address));
                 }
                 Ok(ManagerCommands::ActorShutdownNotice {
                     address,
@@ -242,11 +244,10 @@ impl RuntimeManager {
                                     child.uri,
                                     address.uri
                                 );
-                                self.executor_command_channels
-                                    .get(&entry.executor)
-                                    .unwrap()
-                                    .send(ExecutorCommands::ShutdownActor(child))
-                                    .unwrap();
+                                channel_send!(
+                                    self.executor_command_channels.get(&entry.executor).unwrap(),
+                                    ExecutorCommands::ShutdownActor(child)
+                                );
                             }
                         }
 
@@ -330,18 +331,18 @@ impl RuntimeManager {
     ) {
         // Notify the executor the actor has completed shutdown so the executor
         // can do any final, necessary cleanup.
-        self.executor_command_channels
-            .get(executor)
-            .unwrap()
-            .send(ExecutorCommands::ShutdownActorComplete(address))
-            .unwrap();
+        channel_send!(
+            self.executor_command_channels.get(executor).unwrap(),
+            ExecutorCommands::ShutdownActorComplete(address)
+        );
         // Send notice to the runtime manager that signals a child has been
         // shut down. This is necessary in case the parent is also shutting
         // down (and must wait for child actor to shutdown first).
         if let Some(p) = parent {
-            self.manager_command_channel
-                .send(ManagerCommands::ActorChildShutdownNotice(p))
-                .unwrap();
+            channel_send!(
+                self.manager_command_channel,
+                ManagerCommands::ActorChildShutdownNotice(p)
+            );
         }
         // Check if the system should shutdown
         self.maybe_shutdown();
@@ -352,9 +353,7 @@ impl RuntimeManager {
     fn maybe_shutdown(&self) {
         if self.actor_shutdown_staging.is_empty() && self.actor_registry.is_empty() {
             trace!("No running actors or actors pending stop. Shutting down system");
-            self.manager_command_channel
-                .send(ManagerCommands::Shutdown)
-                .unwrap();
+            channel_send!(self.manager_command_channel, ManagerCommands::Shutdown);
         }
     }
 
@@ -394,20 +393,19 @@ impl RuntimeManagerRef {
     /// Signal to the runtime manager to begin shutting down the system. This will result in
     /// shutdown notifications being sent to all of the executors.
     pub(crate) fn shutdown_system(&self) {
-        self.manager_command_channel
-            .send(ManagerCommands::Shutdown)
-            .unwrap();
+        channel_send!(self.manager_command_channel, ManagerCommands::Shutdown);
     }
 
     /// Signal to the runtime manager the the executor has completed (or is very near completing)
     /// shutdown. This should only be called by the executor itself as the final step of it's
     /// shutdown process.
     pub(crate) fn notify_shutdown(&self, executor_name: String) {
-        self.manager_command_channel
-            .send(ManagerCommands::ExecutorShutdown {
+        channel_send!(
+            self.manager_command_channel,
+            ManagerCommands::ExecutorShutdown {
                 name: executor_name,
-            })
-            .unwrap();
+            }
+        );
     }
 
     /// Request that a new actor be assigned to a runtime executor. This may be called when assigning
@@ -420,14 +418,15 @@ impl RuntimeManagerRef {
         parent: Option<ActorAddress>,
     ) -> Receiver<Result<ActorAddress, BusanError>> {
         let (sender, receiver) = bounded::<Result<ActorAddress, BusanError>>(1);
-        self.manager_command_channel
-            .send(ManagerCommands::AssignActor {
+        channel_send!(
+            self.manager_command_channel,
+            ManagerCommands::AssignActor {
                 actor,
                 address,
                 parent,
                 ready_channel: sender,
-            })
-            .unwrap();
+            }
+        );
         receiver
     }
 
@@ -437,13 +436,14 @@ impl RuntimeManagerRef {
         parent: Option<ActorAddress>,
         children: Vec<ActorAddress>,
     ) {
-        self.manager_command_channel
-            .send(ManagerCommands::ActorShutdownNotice {
+        channel_send!(
+            self.manager_command_channel,
+            ManagerCommands::ActorShutdownNotice {
                 address: address.clone(),
                 parent,
                 children,
-            })
-            .unwrap();
+            }
+        );
     }
 
     /// Resolve an address to mailbox by looking up the actor in the global registry. Note that this
@@ -451,14 +451,15 @@ impl RuntimeManagerRef {
     pub(crate) fn resolve_address(&self, address: &ActorAddress) -> Option<actor::Mailbox> {
         let uri = address.uri.clone();
         let (sender, receiver) = bounded::<Option<actor::Mailbox>>(1);
-        self.manager_command_channel
-            .send(ManagerCommands::ResolveAddress {
+        channel_send!(
+            self.manager_command_channel,
+            ManagerCommands::ResolveAddress {
                 address_uri: uri,
                 return_channel: sender,
-            })
-            .unwrap();
+            }
+        );
 
-        receiver.recv().unwrap()
+        channel_must_recv!(receiver)
     }
 }
 

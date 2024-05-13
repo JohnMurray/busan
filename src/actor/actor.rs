@@ -3,6 +3,7 @@ use crate::error::BusanError;
 use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
 use crate::system::RuntimeManagerRef;
+use crate::util::lib_macros::channel_send;
 use crate::util::CommandChannel;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
@@ -265,9 +266,10 @@ impl Context<'_> {
     /// Perform immediate shutdown for the current actor.
     pub fn shutdown(&mut self) {
         cell_state::set_shutdown(self.cell_state);
-        self.executor_command_channel
-            .send(ExecutorCommands::ShutdownActor(self.address.clone()))
-            .unwrap();
+        channel_send!(
+            self.executor_command_channel,
+            ExecutorCommands::ShutdownActor(self.address.clone())
+        );
     }
 }
 

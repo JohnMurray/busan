@@ -9,6 +9,7 @@ use crate::executor::{
 };
 use crate::message::system::ack;
 use crate::system::RuntimeManagerRef;
+use crate::util::lib_macros::channel_must_recv;
 
 pub struct ThreadExecutorFactory {}
 impl ExecutorFactory for ThreadExecutorFactory {
@@ -106,7 +107,7 @@ impl Executor for ThreadExecutor {
 
         loop {
             if !self.command_channel.recv_is_empty() {
-                match self.command_channel.recv().unwrap() {
+                match channel_must_recv!(self.command_channel) {
                     ExecutorCommands::AssignActor(mut cell) => {
                         debug!("received actor assignment for {}", &cell.address.uri);
                         self.assert_unique_address(&cell.address.uri);
@@ -116,7 +117,10 @@ impl Executor for ThreadExecutor {
                         self.actor_cells.insert(cell.address.uri.clone(), cell);
                     }
                     ExecutorCommands::ShutdownActor(address) => {
-                        let cell = self.actor_cells.get_mut(&address.uri).unwrap();
+                        let cell = match self.actor_cells.get_mut(&address.uri) {
+                            Some(c) => c,
+                            None => continue,
+                        };
                         cell_state::set_shutdown(&mut cell.state);
                         trace!("calling before_stop for actor {}", &cell.address.uri);
                         cell.actor
@@ -137,7 +141,10 @@ impl Executor for ThreadExecutor {
                         //       to the message we send in `runtime_manager.shutdown_actor`).
                     }
                     ExecutorCommands::ShutdownActorComplete(address) => {
-                        let mut cell = self.actor_cells.remove(&address.uri).unwrap();
+                        let mut cell = match self.actor_cells.remove(&address.uri) {
+                            Some(c) => c,
+                            None => continue,
+                        };
                         trace!("calling after_stop for actor {}", &cell.address.uri);
                         cell.actor.after_stop();
                     }
