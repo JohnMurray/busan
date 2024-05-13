@@ -258,6 +258,10 @@ impl Context<'_> {
         self.parent.as_ref()
     }
 
+    pub fn address(&self) -> &ActorAddress {
+        self.address
+    }
+
     /// Perform immediate shutdown for the current actor.
     pub fn shutdown(&mut self) {
         cell_state::set_shutdown(self.cell_state);
