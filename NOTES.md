@@ -9,6 +9,8 @@ something usable.
     - [ ] death-watch / poison-pill
 - [x] ACK messages (pre-condition to various forms of message routing)
 - [ ] Message routing
+    - [ ] Dead letter queue
+    - [ ] Routers/Load Balancers/Proxies/etc.
 - [ ] Stats & Observability
 - [ ] Behavior system
 - [ ] Message matching ergonomics
