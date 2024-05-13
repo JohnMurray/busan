@@ -118,20 +118,28 @@ impl Executor for ThreadExecutor {
                     ExecutorCommands::ShutdownActor(address) => {
                         let cell = self.actor_cells.get_mut(&address.uri).unwrap();
                         cell_state::set_shutdown(&mut cell.state);
+                        trace!("calling before_stop for actor {}", &cell.address.uri);
                         cell.actor
                             .before_stop(context!(self, cell, SenderType::System));
 
-                        // Inform the runtime manager of the shutdown and also forward shutdown
-                        // signals to the children.
-                        self.runtime_manager.shutdown_actor(&address, false);
-                        for child in &cell.children {
-                            self.runtime_manager.shutdown_actor(child, true);
-                        }
+                        // Inform the runtime manager of the shutdown. The runtime manager
+                        // will take care of shutting down the children first and then send
+                        // a `ShutdownActorComplete` message so we can call `after_stop`.
+                        self.runtime_manager.actor_shutdown_notice(
+                            &address,
+                            cell.parent.clone(),
+                            cell.children.clone(),
+                        );
 
                         // TODO: Notify the parent and all of the watchers
                         //       thought: maybe this should be done by the runtime manager when the
                         //       shutdown signal is sent. (add an additional flag of "notify_parent"
                         //       to the message we send in `runtime_manager.shutdown_actor`).
+                    }
+                    ExecutorCommands::ShutdownActorComplete(address) => {
+                        let mut cell = self.actor_cells.remove(&address.uri).unwrap();
+                        trace!("calling after_stop for actor {}", &cell.address.uri);
+                        cell.actor.after_stop();
                     }
                     ExecutorCommands::Shutdown => {
                         info!("received shutdown command");

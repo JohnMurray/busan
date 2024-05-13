@@ -10,6 +10,7 @@ use crate::util::CommandChannel;
 pub enum ExecutorCommands {
     AssignActor(ActorCell),
     ShutdownActor(ActorAddress),
+    ShutdownActorComplete(ActorAddress),
     Shutdown,
 }
 

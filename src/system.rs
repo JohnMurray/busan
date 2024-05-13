@@ -1,5 +1,5 @@
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
-use log::{info, warn};
+use log::{info, trace, warn};
 use std::collections::HashMap;
 use std::thread;
 
@@ -142,6 +142,10 @@ struct RuntimeManager {
     executor_command_channels: HashMap<String, CommandChannel<ExecutorCommands>>,
     actor_registry: HashMap<Uri, ActorRegistryEntry>,
 
+    /// State-tracking for actors that are in the process of terminating. Necessary
+    /// to track state while actor sub-tree's are terminated.
+    actor_shutdown_staging: HashMap<Uri, ActorShutdownHandle>,
+
     manager_command_channel: CommandChannel<ManagerCommands>,
 
     round_robin_state: usize,
@@ -153,6 +157,7 @@ impl RuntimeManager {
         RuntimeManager {
             executor_command_channels: HashMap::new(),
             actor_registry: HashMap::new(),
+            actor_shutdown_staging: HashMap::new(),
             manager_command_channel: CommandChannel::new(),
             round_robin_state: 0,
             shutdown_initiated: false,
@@ -218,17 +223,80 @@ impl RuntimeManager {
 
                     let _ = ready_channel.send(Ok(address));
                 }
-                Ok(ManagerCommands::ShutdownActor {
+                Ok(ManagerCommands::ActorShutdownNotice {
                     address,
-                    forward_to_executor,
+                    parent,
+                    children,
                 }) => {
-                    let lookup = self.actor_registry.remove(&address.uri);
-                    if forward_to_executor && lookup.is_some() {
-                        self.executor_command_channels
-                            .get(&lookup.unwrap().executor)
-                            .unwrap()
-                            .send(ExecutorCommands::ShutdownActor(address))
+                    trace!("system received shutdown notice for {}", address);
+                    // Remove the parent from the registry
+                    let self_lookup = self.actor_registry.remove(&address.uri);
+                    if self_lookup.is_some() {
+                        // Send notice to executors to perform local shutdown actions
+                        let num_children = children.len();
+                        for child in children {
+                            let child_lookup = self.actor_registry.get(&child.uri);
+                            if let Some(entry) = child_lookup {
+                                trace!(
+                                    "shutting down actor {} due to parent shutdown ({})",
+                                    child.uri,
+                                    address.uri
+                                );
+                                self.executor_command_channels
+                                    .get(&entry.executor)
+                                    .unwrap()
+                                    .send(ExecutorCommands::ShutdownActor(child))
+                                    .unwrap();
+                            }
+                        }
+
+                        if num_children == 0 {
+                            // If there are no children, then we can go ahead and complete the
+                            // shutdown process for the actor.
+                            self.complete_actor_shutdown(
+                                &self_lookup.unwrap().executor,
+                                address.clone(),
+                                parent.clone(),
+                            );
+                        } else {
+                            // Otherwise, we'll need to create a shutdown handle for the current
+                            // actor. This will be accessed/updated each time a child has completed
+                            // shutdown and will let us know when it is safe to shutdown the current
+                            // actor.
+                            self.actor_shutdown_staging.insert(
+                                address.uri.clone(),
+                                ActorShutdownHandle {
+                                    parent,
+                                    wait_count: num_children,
+                                    executor: self_lookup.unwrap().executor.clone(),
+                                },
+                            );
+                        }
+                    }
+                }
+                Ok(ManagerCommands::ActorChildShutdownNotice(parent_address)) => {
+                    // Handle notice that a child has shutdown. If the handle is not found, it means
+                    // the parent is not shutting down and no action is required.
+                    let mut is_complete = false;
+                    if let Some(handle) = self.actor_shutdown_staging.get_mut(&parent_address.uri) {
+                        handle.wait_count -= 1;
+                        // Check if all children have finished shutting down. If so, mark is_complete
+                        // to finish shutdown (below).
+                        if handle.wait_count == 0 {
+                            is_complete = true;
+                        }
+                    }
+
+                    if is_complete {
+                        let handle = self
+                            .actor_shutdown_staging
+                            .remove(&parent_address.uri)
                             .unwrap();
+                        self.complete_actor_shutdown(
+                            &handle.executor,
+                            parent_address,
+                            handle.parent,
+                        );
                     }
                 }
                 Ok(ManagerCommands::ResolveAddress {
@@ -254,6 +322,42 @@ impl RuntimeManager {
         info!("Runtime manager shutting down");
     }
 
+    fn complete_actor_shutdown(
+        &self,
+        executor: &String,
+        address: ActorAddress,
+        parent: Option<ActorAddress>,
+    ) {
+        // Notify the executor the actor has completed shutdown so the executor
+        // can do any final, necessary cleanup.
+        self.executor_command_channels
+            .get(executor)
+            .unwrap()
+            .send(ExecutorCommands::ShutdownActorComplete(address))
+            .unwrap();
+        // Send notice to the runtime manager that signals a child has been
+        // shut down. This is necessary in case the parent is also shutting
+        // down (and must wait for child actor to shutdown first).
+        if let Some(p) = parent {
+            self.manager_command_channel
+                .send(ManagerCommands::ActorChildShutdownNotice(p))
+                .unwrap();
+        }
+        // Check if the system should shutdown
+        self.maybe_shutdown();
+    }
+
+    /// Checks if the system should shutdown (e.g. due to no running actors) and send
+    /// the shutdown signal if appropriate.
+    fn maybe_shutdown(&self) {
+        if self.actor_shutdown_staging.is_empty() && self.actor_registry.is_empty() {
+            trace!("No running actors or actors pending stop. Shutting down system");
+            self.manager_command_channel
+                .send(ManagerCommands::Shutdown)
+                .unwrap();
+        }
+    }
+
     fn get_next_executor(&mut self) -> String {
         let mut iter = self.executor_command_channels.iter();
         debug_assert!(iter.len() > 0, "No executors found");
@@ -264,6 +368,14 @@ impl RuntimeManager {
         self.round_robin_state += 1;
         executor
     }
+}
+
+/// An accounting structure for actors that are shutting down. Tracks the number of
+/// children pending shutdown (`wait_count`) and the executor of the actor.
+struct ActorShutdownHandle {
+    parent: Option<ActorAddress>,
+    wait_count: usize,
+    executor: String,
 }
 
 /// `RuntimeManagerRef` is a handle for communicating to the runtime manager in a thread-safe
@@ -319,11 +431,17 @@ impl RuntimeManagerRef {
         receiver
     }
 
-    pub(crate) fn shutdown_actor(&self, address: &ActorAddress, forward_to_executor: bool) {
+    pub(crate) fn actor_shutdown_notice(
+        &self,
+        address: &ActorAddress,
+        parent: Option<ActorAddress>,
+        children: Vec<ActorAddress>,
+    ) {
         self.manager_command_channel
-            .send(ManagerCommands::ShutdownActor {
+            .send(ManagerCommands::ActorShutdownNotice {
                 address: address.clone(),
-                forward_to_executor,
+                parent,
+                children,
             })
             .unwrap();
     }
@@ -366,14 +484,17 @@ enum ManagerCommands {
         ready_channel: Sender<Result<ActorAddress, BusanError>>,
     },
 
-    /// A request to shutdown an actor. This will update the runtime manager's actor registry and,
-    /// if requested, forward the shutdown request to the executor. This can be handy when you want
-    /// to shutdown an actor (e.g. a child of an actor that has initiated shutdown), but do not know
-    /// where the actor is currently running.
-    ShutdownActor {
+    /// A notice that an actor has started the shutdown process. This will update the runtime
+    /// manager's actor registry, begin the shutdown sequence for the actor tree, and send a final
+    /// shutdown signal back to the executor when the sub-tree has been terminated.
+    ActorShutdownNotice {
         address: ActorAddress,
-        forward_to_executor: bool,
+        parent: Option<ActorAddress>,
+        children: Vec<ActorAddress>,
     },
+
+    /// TODO: Document
+    ActorChildShutdownNotice(ActorAddress),
 
     /// A request to resolve an actor address to a mailbox. This is given a direct return
     /// channel so the sender can block on the result of the lookup if desired.
