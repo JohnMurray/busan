@@ -11,6 +11,7 @@ something usable.
 - [ ] Message routing
 - [ ] Stats & Observability
 - [ ] Behavior system
+- [ ] Message matching ergonomics
 
 
 ### Randome cleanup
