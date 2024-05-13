@@ -5,33 +5,12 @@ something usable.
 
 - [ ] Actor Supervision
 - [ ] Lifecycle Management (pre-condition to supervision)
-- [ ] ACK messages (pre-condition to various forms of message routing)
+    - [x] shutdown trees
+    - [ ] death-watch / poison-pill
+- [x] ACK messages (pre-condition to various forms of message routing)
 - [ ] Message routing
 - [ ] Stats & Observability
 - [ ] Behavior system
-
-
-### Actor Shutdown
-
-This is pretty broken right now and a hack. We should do this properly.
-
-- [ ] Initial shutdown request
-    - [ ] Block receipt of new messages
-    - [ ] Send shutdown notices to all watchers
-    - [ ] Call `before_shutdown` handle on the actor
-    - [ ] Call shutdown (__and wait for completion__) on all children
-    - [ ] Call `after_shutdown` handle on the actor
-- [ ] Shutdown should be handled by the runtime-manager
-- [ ] Shutdown actions should be designed in terms of trees and sub-trees
-
-### Message ACK'nowledgement
-
-- [x] Track the nonce-state so that it can be auto-incremented without user tracking
-- [x] Send the nonce from the actor context
-- [x] Read the nonce-value in an actor-specific method that is user-overridable
-- [x] Example
-- [x] Revise example with working spawn
-- [ ] Get example working wit proper shutdown
 
 
 ### Randome cleanup
@@ -39,6 +18,7 @@ This is pretty broken right now and a hack. We should do this properly.
 - [ ] Document send methods in `actor.rs`
 - [ ] Is the resolution step persisted on addresses on copy/move?
 - [x] Block on child spawn - the actor should be allocated... I think
+- [ ] Do not allow for "dangling" actors created after shutdown has been started
 - [ ] crossbeam channel `send` macro that asserts sending, something like:
     ```rust
     macro_rules! debug_assert_send {
@@ -50,6 +30,7 @@ This is pretty broken right now and a hack. We should do this properly.
         }
     }
     ```
+- [ ] Refactor the shutdown logic into a separate shutdown manager
 
 
 ## Offline Development
