@@ -4,6 +4,10 @@
   + Support `ToMessage` in actor-spawn methods - #62
   + `Context::send` now sends `ToMessage` objects and `Context::send_message` sends `Box<Message>` - #66
   + `Message` support for `ActorAddress` so they can be shared between actors - #67
+  + Added send/receive macros for internal channel operations
+  + Implemented a heirarchical shutdown system
+  + Added `ACK` messages for message delivery confirmation
+  + Added `ActorSpawnHandle` for newly created actors
 
 ## 0.1.2 through 0.2.0
 
