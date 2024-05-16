@@ -310,9 +310,7 @@ impl ActorSpawnHandle {
     }
 
     /// Blocks on actor assignment and discards the error. Equivalent to
-    /// ```rust
-    /// spawn_handle.await_ready().unwrap()
-    /// ```
+    /// `spawn_handle.await_ready().unwrap()`
     pub fn await_unwrap(&self) -> ActorAddress {
         let res = self.await_ready();
         // If there is an error, panic with a descriptive message of what went wrong
