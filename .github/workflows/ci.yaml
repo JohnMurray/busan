@@ -93,9 +93,9 @@ jobs:
     needs: [check]
     steps:
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: latest
       - name: Install CSpell
         run: npm install -g cspell
       - uses: actions/checkout@v3
