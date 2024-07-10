@@ -29,7 +29,7 @@ pub trait Message: prost::Message {
 pub trait ToMessage<M: Message> {
     fn to_message(self) -> M;
 
-    /// Signal that implimentation is for a primitive type (e.g. ints, floats,
+    /// Signal that implementation is for a primitive type (e.g. ints, floats,
     /// bools, etc). This may allow for some internal optimizations.
     fn is_primitive<L: private::IsLocal>(&self) -> bool {
         false

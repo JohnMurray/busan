@@ -3,7 +3,7 @@
 macro_rules! channel_send {
     ($e:expr, $ee:expr) => {{
         let res = ($e).send($ee);
-        // Provide a more helpeful error message during debug runs
+        // Provide a more helpful error message during debug runs
         debug_assert!(
             res.is_ok(),
             "Unable to send message across channel: {}",
