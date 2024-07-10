@@ -16,7 +16,7 @@ something usable.
 - [ ] Message matching ergonomics
 
 
-### Randome cleanup
+### Random cleanup
 
 - [ ] Document send methods in `actor.rs`
 - [ ] Is the resolution step persisted on addresses on copy/move?

@@ -10,6 +10,7 @@
     ],
     "words": [
         "datacenter",
+        "heirarchical",
         "journaling",
         "proxying",
         "relatedly",
@@ -26,6 +27,7 @@
         "proto",
         "protobuf",
         "protos",
+        "ratatui", // A TUI rust library
         "rustdocs",
         "snapshotting",
         "struct"

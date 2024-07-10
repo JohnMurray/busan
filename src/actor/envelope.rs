@@ -49,7 +49,7 @@ impl Envelope {
     /// sender and receiver addresses. A `None` sender will always be interpreted as a
     /// `SenderType::System`.
     ///
-    /// Optionall define an ACK nonce-value. If this is non-None, the sender is not the same as
+    /// Optional define an ACK nonce-value. If this is non-None, the sender is not the same as
     /// the receiver, and the message is not system-originated, an [`crate::message::system::Ack`]
     /// will be sent to the sender on receipt by the receiver.
     pub fn new(
