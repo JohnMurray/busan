@@ -7,6 +7,7 @@ use crate::util::lib_macros::channel_send;
 use crate::util::CommandChannel;
 use crossbeam_channel::Receiver;
 use log::{trace, warn};
+use std::rc::Weak;
 
 /// Trait that defines the behavior of an actor. This is the primary interface that must be
 /// implemented when defining an actor.
@@ -55,6 +56,8 @@ pub trait Actor: Send {
     fn after_stop(&mut self) {}
 }
 
+type ReceiverFunc = fn(&mut dyn Actor, Context, Box<dyn Message>);
+
 /// ActorInit defines a method of construction for an actor that takes an initialization
 /// message. This provides type-safe initialization of an actor while keeping construction
 /// and internal state within the actor system.
@@ -98,6 +101,8 @@ pub struct ActorCell {
     pub(crate) parent: Option<ActorAddress>,
     pub(crate) state: CellState,
     pub(crate) ack_nonce: u32,
+
+    pub(crate) receiver: &ReceiverFunc,
 }
 
 impl ActorCell {
@@ -107,6 +112,7 @@ impl ActorCell {
         address: ActorAddress,
         parent: Option<ActorAddress>,
     ) -> Self {
+        let receiver: ReceiverFunc = actor.as_ref().receive;
         Self {
             actor,
             mailbox,
@@ -115,6 +121,7 @@ impl ActorCell {
             parent,
             state: 0,
             ack_nonce: 0,
+            receiver,
         }
     }
 }

@@ -89,6 +89,8 @@ pub mod actor;
 pub mod address;
 #[doc(hidden)]
 pub mod envelope;
+#[doc(hidden)]
+pub mod matcher;
 
 pub mod proto;
 
@@ -96,6 +98,8 @@ pub mod proto;
 pub use actor::*;
 #[doc(inline)]
 pub use address::*;
+#[doc(inline)]
+pub use matcher::*;
 
 pub(crate) use envelope::*;
 pub(crate) type Mailbox = crossbeam_channel::Sender<Envelope>;
