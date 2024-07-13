@@ -119,3 +119,92 @@ pub fn test() {
         }
     }
 }
+
+/*
+  Thought Experiment
+    - The concerns around `self` are irrelevant (for now)
+    - Behaviors are a clean way to implement the actor state machine and we can do this if
+      we don't think about `self`.
+    - What would an ideal API look like here?
+
+What we have today:
+----
+    fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
+        // Print the message and respond with a "ping"
+        if let Some(str_msg) = msg.as_any().downcast_ref::<StringWrapper>() {
+            println!("received message: {}", str_msg.value);
+            ctx.send(ctx.sender(), "ping");
+        }
+    }
+
+What is not ideal about this?
+    - The APIs are not composable in any way
+    - Exposing the type-matching logic is gross _and_ an implementation detail that's
+      leaking into userspace code
+    -
+
+Proposal #1
+----
+    fn receive(&mut self, ctx: Context, msg: Message) {
+        match_message!(msg) {
+            m: StringWrapper => {
+                println!("received message: {}", m.value);
+                ctx.send(ctx.sender(), "ping");
+            },
+            _ => {
+                println!("received message: {:?}", msg);
+            }
+        }
+    }
+
+    GOOD
+    - This is good for the simple case where you're not really using the actor as a
+      state machine at all.
+    - This matches more idiomatic rust code and pattern matching
+
+    BAD
+    - This isn't composible, there are no behavior objects being created/returned
+
+Proposal #2
+----
+    fn starting_state(&mut self, _: Context) -> BehaviorSet {
+        BehaviorSet::new(vec![
+            Behavior::new(|msg| msg.is::<StringWrapper>(), |actor, ctx, msg| {
+                let msg = msg.downcast_ref::<StringWrapper>().unwrap();
+                ctx.send(ctx.sender(), "ping");
+                actor.become(actor.next_state())   // STATE TRANSITION
+            }),
+            Behavior::new(|msg| true, |actor, msg| {
+                println!("received message: {:?}", msg);
+            }),
+        ])
+    }
+
+    fn next_state(&self) -> BehaviorSet {
+        BehaviorSet::new(vec![
+            Behavior::new(|msg| msg.is::<StringWrapper>(), |actor, msg| {
+                let msg = msg.downcast_ref::<StringWrapper>().unwrap();
+                ctx.send(ctx.sender(), "ping-ping");
+            }),
+        ])
+    }
+
+    // This would become a default impl on Actor
+    fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
+        self.behavior.receive(ctx, msg);
+    }
+
+
+    NOTES
+    - Behaviors would need to live in the ActorState
+
+    GOOD
+    - These are composable, don't require any macros to get working
+
+    BAD
+    - Boilerplate is higher here, but could be improved with macros
+    - Ergonomics of having to pass everything around (actor, context, etc) is worse
+      than the current state and/or having access to `self`
+    - Captures on the lambdas might be confusing because the storage for these behaviors
+      is going to be outside the actor
+*/
