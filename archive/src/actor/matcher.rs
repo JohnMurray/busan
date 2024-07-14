@@ -207,4 +207,26 @@ Proposal #2
       than the current state and/or having access to `self`
     - Captures on the lambdas might be confusing because the storage for these behaviors
       is going to be outside the actor
+
+
+Proposal #3
+----
+An addition onto Proposal #2 that introduces a few macros to make the
+construction and usage of behaviors easier:
+
+    fn starting_state(&mut self, _: Context) -> BehaviorSet {
+        behaviors![
+            match!<StringWrapper> => |actor, ctx, stringMsg| {
+                println!("received message: {}", stringMsg); // stringMsg is a String
+                ctx.send(ctx.sender(), "ping");
+                actor.become(actor.next_state())  // STATE TRANSITION
+            },
+            default_match! => |actor, ctx, msg| {
+                println!("received message: {:?}", msg);
+            },
+        ]
+    }
+
+
+
 */
