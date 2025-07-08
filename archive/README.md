@@ -1,5 +1,6 @@
 # busan (부산)
 
+[![Crates.io][crates-badge]][crates-url]
 [![Build Status][actions-badge]][actions-url]
 [![GNU GPL v3 licensed][gpl-badge]][gpl-url]
 [![Decision log][decision-log-badge]][decision-log-url]
