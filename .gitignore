@@ -1,3 +1,11 @@
 # Editor Files
 .idea/
 .vscode/
+
+# Misc Files
+.DS_Store
+
+# Allow for a local TODO file that's not tracked in the repo. The overall project
+# should be managed by a proper project-management tool, but per-task TODO's are
+# also useful
+/todo.md

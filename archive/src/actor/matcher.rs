@@ -37,25 +37,66 @@ Questions
 
 /* This is an impl that I started with that's based on behavior "objects" but
 had a flaw in that it can't pull in the local scope of the actor */
-use crate::actor::Actor;
-use std::any::Any;
+use crate::actor::{Actor, Context};
+use crate::message::Message;
 
-pub struct Behavior<T: Actor> {
-    matcher: fn(&dyn Any) -> bool,
-    handler: fn(&mut T, &dyn Any) -> (),
+pub struct BehaviorSet<A: Actor> {
+    behaviors: Vec<Box<dyn Behavior<A>>>,
 }
 
-impl<T: Actor> Behavior<T> {
-    // TODO: Remove later, just was pretty annoyed for right now
-    #[allow(dead_code)]
-    fn apply(&self, msg: &dyn Any, actor: &mut T) -> bool {
-        if (self.matcher)(msg) {
-            (self.handler)(actor, msg);
-            return true;
+impl<A: Actor> BehaviorSet<A> {
+    pub fn new(behaviors: Vec<Box<dyn Behavior<A>>>) -> Self {
+        Self { behaviors }
+    }
+
+    pub fn can_handle(&self, msg: &dyn Message) -> bool {
+        for behavior in self.behaviors.iter() {
+            if behavior.is_match(msg) {
+                return true;
+            }
         }
         false
     }
+
+    pub fn handle(&self, actor: &mut A, ctx: Context, msg: &dyn Message) -> Result<(), ()> {
+        for behavior in self.behaviors.iter() {
+            if behavior.is_match(msg) {
+                behavior.handle(actor, ctx, msg);
+                return Ok(());
+            }
+        }
+        Err(())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.behaviors.is_empty()
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            behaviors: Vec::new(),
+        }
+    }
 }
+
+trait Behavior<A: Actor> {
+    fn is_match(&self, msg: &dyn Message) -> bool;
+    fn handle(&self, actor: &mut A, ctx: Context, msg: &dyn Message);
+}
+
+// pub struct Behavior {
+//     matcher: fn(&dyn Message) -> bool,
+//     handler: fn(&mut dyn Actor, ctx: Context, &dyn Message) -> (),
+// }
+
+// impl Behavior {
+//     pub fn new(
+//         matcher: fn(&dyn Message) -> bool,
+//         handler: fn(&mut dyn Actor, Context, &dyn Message) -> (),
+//     ) -> Self {
+//         Self { matcher, handler }
+//     }
+// }
 
 // macro_rules! handle {
 //     ($var:ident : $ty:ty, $b:block) => {
@@ -76,18 +117,12 @@ impl<T: Actor> Behavior<T> {
 //     };
 // }
 
-pub fn test() {
-    // handle!(self: String, {
-    //     println!("Got a string: {}", self);
-    // });
-    use crate::actor::{ActorInit, Context};
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::actor::{Actor, ActorInit, Context};
     use crate::message::common_types::{I32Wrapper, StringWrapper};
     use crate::message::Message;
-
-    trait Behavior2<T: Actor, M: Message> {
-        fn matcher(&self, msg: &dyn Message) -> bool;
-        fn handler(&mut self, msg: &dyn Message);
-    }
 
     struct Ping {}
     impl ActorInit for Ping {
@@ -100,26 +135,33 @@ pub fn test() {
         }
     }
     impl Actor for Ping {
-        fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
-            // Print the message and respond with a "ping"
-            if let Some(str_msg) = msg.as_any().downcast_ref::<StringWrapper>() {
-                println!("received message: {}", str_msg.value);
-                ctx.send(ctx.sender(), "ping");
-            }
+        fn receive(&mut self, _: Context, _: Box<dyn Message>) {}
+
+        fn init_state(&self) -> BehaviorSet {
+            BehaviorSet::new(vec![Behavior {
+                matcher: |msg| msg.as_any().downcast_ref::<StringWrapper>().is_some(),
+                handler: |_actor, _, msg| {
+                    let msg = msg.as_any().downcast_ref::<StringWrapper>().unwrap();
+                    let a = _actor.as_any().downcast_ref::<Ping>().unwrap();
+                    println!("Got a string: {}", msg.value);
+                },
+            }])
         }
     }
 
-    impl Behavior2<Ping, StringWrapper> for Ping {
-        fn matcher(&self, msg: &dyn Message) -> bool {
-            msg.as_any().downcast_ref::<String>().is_some()
-        }
-        fn handler(&mut self, msg: &dyn Message) {
-            let msg = msg.as_any().downcast_ref::<String>().unwrap();
-            println!("Got a string: {}", msg);
-        }
+    #[test]
+    pub fn test() {
+        // impl Behavior2<Ping, StringWrapper> for Ping {
+        //     fn matcher(&self, msg: &dyn Message) -> bool {
+        //         msg.as_any().downcast_ref::<String>().is_some()
+        //     }
+        //     fn handler(&mut self, msg: &dyn Message) {
+        //         let msg = msg.as_any().downcast_ref::<String>().unwrap();
+        //         println!("Got a string: {}", msg);
+        //     }
+        // }
     }
 }
-
 /*
   Thought Experiment
     - The concerns around `self` are irrelevant (for now)

@@ -1,4 +1,4 @@
-use crate::actor::{ActorAddress, Envelope, SenderType};
+use crate::actor::{ActorAddress, BehaviorSet, Envelope, SenderType};
 use crate::error::BusanError;
 use crate::executor::ExecutorCommands;
 use crate::message::{Message, ToMessage};
@@ -34,7 +34,16 @@ pub trait Actor: Send {
 
     /// Receive a message. This is the primary method for handling messages and is called
     /// for every message received by the actor.
-    fn receive(&mut self, ctx: Context, msg: Box<dyn Message>);
+    fn receive(&mut self, ctx: Context, msg: Box<dyn Message>) {
+        self.unhandled(ctx, msg);
+    }
+
+    fn init_state(&self) -> BehaviorSet<Self>
+    where
+        Self: Sized,
+    {
+        BehaviorSet::empty()
+    }
 
     /// Hook called after shutdown has been initiated, but before the actor has been removed
     /// from the executor. This can be used to send any final messages before the actor is
@@ -53,6 +62,13 @@ pub trait Actor: Send {
     /// __Note:__ Messages can no longer be sent from this method. See [`Actor::before_stop`]
     /// for the last chance to send messages.
     fn after_stop(&mut self) {}
+
+    fn as_any(self: &mut Self) -> &dyn ::std::any::Any
+    where
+        Self: 'static + Sized,
+    {
+        self
+    }
 }
 
 /// ActorInit defines a method of construction for an actor that takes an initialization
@@ -98,6 +114,7 @@ pub struct ActorCell {
     pub(crate) parent: Option<ActorAddress>,
     pub(crate) state: CellState,
     pub(crate) ack_nonce: u32,
+    pub(crate) behavior: BehaviorSet,
 }
 
 impl ActorCell {
@@ -115,6 +132,7 @@ impl ActorCell {
             parent,
             state: 0,
             ack_nonce: 0,
+            behavior: BehaviorSet::empty(),
         }
     }
 }
