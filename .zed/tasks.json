@@ -1,0 +1,19 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+[
+  // Command to start a watcher and compile the project on every save.
+  // This is also necessary to keep ZLS up to date.
+  {
+    "label": "Compile on save",
+    "command": "cd day-2 && fswatch -0 . | xargs -0 -I{} zig build test",
+    // This task just needs to be spawned once. No need for this to run
+    // more than a single instance.
+    "allow_concurrent_runs": false,
+    // No need to show this thing. Can open up if hunting down an issue. No
+    // need to be annoying.
+    "reveal": "never",
+    "reveal_target": "dock",
+    // This is on complete, but we really shouldn't be completing.
+    "hide": "on_success",
+    "shell": "system"
+  }
+]
