@@ -18,7 +18,6 @@ jobs:
   spell_check:
     name: Spell Check
     runs-on: ubuntu-latest
-    needs: [check]
     steps:
       - name: Install Node
         uses: actions/setup-node@v4
