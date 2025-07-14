@@ -2,6 +2,9 @@
 .idea/
 .vscode/
 
+# Compilation files
+.zig-cache/
+
 # Misc Files
 .DS_Store
 
