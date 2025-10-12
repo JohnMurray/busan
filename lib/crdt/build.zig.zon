@@ -1,0 +1,13 @@
+.{
+    .name = .crdt,
+    .version = "0.0.0",
+    .fingerprint = 0x95b2049653a5d94, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.15.0-dev.921+97ecb6c55",
+    .dependencies = .{
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
